@@ -1,0 +1,63 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Ambientes virtuais
+.venv/
+venv/
+.uv/
+
+# ---- macOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ---- Variáveis de ambiente ----
+.env
+.env.local
+.env.*.local
+
+# ---- Dados sensíveis (PII médica, datasets pesados) ----
+# Não commitar nada de data/raw e data/processed por padrão.
+data/raw/*
+data/processed/*
+data/synthetic/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/synthetic/.gitkeep
+
+# Vector DB persistido
+data/chroma/
+
+# ---- Saídas de fine-tuning (modelos pesados) ----
+finetuning/outputs/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+# ---- Logs de auditoria ----
+logging_/logs/*
+!logging_/logs/.gitkeep
+
+# ---- IDE / Editores ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- Misc ----
+.coverage
+htmlcov/
