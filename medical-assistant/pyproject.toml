@@ -42,11 +42,17 @@ inference = [
     "ollama>=0.3,<1.0",
 ]
 
-# Processamento de dados médicos (datasets, NER clínico, tabulares).
+# Processamento de dados médicos (datasets, NER clínico, tabulares,
+# geração sintética via OpenAI, demográficos brasileiros via Faker,
+# retry resiliente, contagem aproximada de tokens).
 data = [
     "datasets>=2.20,<3.0",
     "spacy>=3.7,<4.0",
     "pandas>=2.2,<3.0",
+    "openai>=1.40,<2.0",
+    "faker>=26.0,<28.0",
+    "tenacity>=9.0,<10.0",
+    "tiktoken>=0.7,<1.0",
 ]
 
 # Ferramentas de desenvolvimento.
@@ -69,3 +75,11 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+# Permite que os testes em data/test_*.py importem módulos do próprio
+# diretório (ex: `from anonymization import ...`) sem precisar instalar
+# o projeto como pacote.
+pythonpath = ["data"]
+testpaths = ["data"]
+python_files = ["test_*.py"]

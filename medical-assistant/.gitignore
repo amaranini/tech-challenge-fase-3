@@ -28,13 +28,17 @@ venv/
 .env.*.local
 
 # ---- Dados sensíveis (PII médica, datasets pesados) ----
-# Não commitar nada de data/raw e data/processed por padrão.
+# Regra geral: dados crus e sintéticos (pré-anonimização) ficam fora do git.
+# Exceção: arquivos finais já anonimizados em data/processed/ vão pro git,
+# pois são entregáveis reprodutíveis do projeto.
 data/raw/*
-data/processed/*
 data/synthetic/*
+data/processed/*
 !data/raw/.gitkeep
-!data/processed/.gitkeep
 !data/synthetic/.gitkeep
+!data/processed/.gitkeep
+!data/processed/*.jsonl
+!data/processed/*.md
 
 # Vector DB persistido
 data/chroma/
