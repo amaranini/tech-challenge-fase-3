@@ -30,15 +30,18 @@ api = [
 ]
 
 # Frontend de demonstração (gravação do vídeo de 15min).
+# rich: terminal bonito do demo_chat (banners, painéis, markdown render).
 ui = [
     "streamlit>=1.36,<2.0",
+    "rich>=13.0,<14.0",
 ]
 
 # Inferência local no Mac Apple Silicon.
-# mlx-lm: backend nativo da Apple (rápido, usa Metal).
+# mlx-lm: backend nativo da Apple (Metal). Versão estável atual no PyPI: 0.31.x.
+# Também é o framework usado no fine-tuning LoRA da Fase 2.
 # ollama: fallback via servidor local + cliente Python.
 inference = [
-    "mlx-lm>=0.18; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "mlx-lm>=0.20,<1.0; sys_platform == 'darwin' and platform_machine == 'arm64'",
     "ollama>=0.3,<1.0",
 ]
 
@@ -56,10 +59,14 @@ data = [
 ]
 
 # Ferramentas de desenvolvimento.
+# matplotlib: gráficos de loss curve / lr schedule para o relatório técnico.
+# pyyaml: leitura/escrita dos configs de fine-tuning.
 dev = [
     "pytest>=8.0,<9.0",
     "ruff>=0.6,<1.0",
     "ipykernel>=6.29,<7.0",
+    "matplotlib>=3.8,<4.0",
+    "pyyaml>=6.0,<7.0",
 ]
 
 [build-system]
@@ -79,7 +86,10 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.pytest.ini_options]
 # Permite que os testes em data/test_*.py importem módulos do próprio
 # diretório (ex: `from anonymization import ...`) sem precisar instalar
-# o projeto como pacote.
-pythonpath = ["data"]
-testpaths = ["data"]
+# o projeto como pacote. `.` adicionado pra resolver `from assistant.*`.
+pythonpath = ["data", "."]
+testpaths = ["data", "assistant"]
 python_files = ["test_*.py"]
+markers = [
+    "slow: testes que carregam o modelo MLX (~10s+) — pulam por default. Use -m slow.",
+]

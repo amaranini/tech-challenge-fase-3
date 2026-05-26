@@ -222,3 +222,195 @@ detectar padrões estruturados (CPF, CEP, telefone, e-mail, etc).
 (reprodutibilidade); mas não deve ter acesso aos dados pré-anonimização
 (prática defensiva, mesmo com dados fictícios).
 
+---
+
+## 8. Modelo de fine-tuning: Qwen2.5-1.5B (em vez do 3B planejado na Fase 0)
+
+**Contexto.** Na Fase 0 escolhemos `Qwen2.5-3B-Instruct` como modelo base.
+Ao chegar na Fase 2 (fine-tuning local no M1 16 GB), refizemos as contas
+de memória pro treino e o 3B ficou apertado demais.
+
+**Decisão.** Trocar para **`mlx-community/Qwen2.5-1.5B-Instruct-bf16`**
+para a Fase 2 (fine-tuning).
+
+**Por quê.**
+- 3B em bf16 ocupa ~6 GB de RAM só com os pesos. Somando ativações,
+  gradientes e otimizador, treino com seq_len=1024 ficaria em ~13 GB —
+  sem margem segura num Mac com 16 GB que ainda precisa rodar o sistema.
+- 1.5B em bf16 ocupa ~3 GB de RAM. Mesma configuração de treino:
+  uso total ~10 GB com margem confortável.
+- Tempo por iteração no M1 também é ~2× mais rápido com 1.5B → treino de
+  30-60 min em vez de 1-3 h.
+- Qualidade da família Qwen2.5 nessa escala (1.5B) é boa para texto
+  médico didático em PT-BR; a perda de qualidade vs 3B é pequena para
+  o nosso caso (estilo/formato, não conhecimento).
+
+**Por que `bf16` e não `4bit` ou `8bit`:** versões quantizadas (`4bit`,
+`8bit`) só servem para inferência — não dá pra treinar LoRA em cima
+delas via mlx-lm. Precisamos da versão `bf16` para treinar.
+
+**Alternativas consideradas.**
+- **Manter o 3B**: caberia se rodássemos com seq_len=512 e
+  `grad_checkpoint=true`, mas o treino dobraria de tempo e o risco de
+  OOM por outros processos do macOS seria alto.
+- **Cair pra 0.5B**: muito conservador. Reservado como plano B (B em
+  `finetuning/README.md` troubleshooting).
+- **Trocar de família (Phi-3.5-mini, Llama-3.2-1B)**: perderíamos a
+  decisão #3, que fundamentava muita coisa. 1.5B Qwen2.5 mantém a
+  família e atende os limites de hardware.
+
+---
+
+## 9. Framework de fine-tuning: mlx-lm
+
+**Contexto.** Para fazer LoRA local no Mac, três caminhos práticos:
+
+**Decisão.** Usar **`mlx-lm`** (Apple). Versão estável atual no PyPI: 0.31.x.
+
+**Por quê.**
+- **Único framework de treino com aceleração GPU real no M1.** Hugging
+  Face `transformers` no Mac roda em CPU (não tem CUDA) → 50-100× mais
+  lento. `mlx-lm` usa Metal, a stack gráfica da Apple, e treina em
+  minutos onde transformers levaria horas.
+- **API CLI e Python**: `mlx_lm.lora --config x.yaml` faz tudo, e dá
+  pra carregar adapter via Python pra inferência (`mlx_lm.load`,
+  `mlx_lm.generate`).
+- **Comunidade ativa**: muitos modelos prontos em `mlx-community/`
+  (versões bf16/4bit/8bit pré-convertidas no Hugging Face).
+- **Formato de dataset compatível com o nosso**: aceita o formato
+  `chat` (linhas `{"messages": [...]}`) que já produzimos na Fase 1 —
+  sem conversão de schema, só rename `val.jsonl → valid.jsonl`.
+
+**Alternativas consideradas.**
+- **Axolotl / LLaMA-Factory**: ferramentas modernas mas exigem CUDA.
+- **TRL + transformers (CPU)**: tecnicamente possível, mas tempo
+  inviável no Mac.
+- **Treinar no Colab e baixar adapter**: contraria a decisão #2 de
+  manter a inferência local e independente.
+
+---
+
+## 10. Hiperparâmetros LoRA
+
+**Contexto.** LoRA tem vários hiperparâmetros sensíveis a dataset/hardware.
+Documentamos os escolhidos e o raciocínio para que possam ser
+revisitados se a curva de loss indicar problema.
+
+**Decisão (final, em `finetuning/configs/lora_config.yaml`):**
+
+| Parâmetro | Valor | Justificativa curta |
+|---|---|---|
+| `rank` | 8 | Default mlx-lm; bom equilíbrio capacidade × memória pra 404 exemplos. |
+| `scale` | 20.0 | Default mlx-lm. Multiplicador da saída LoRA. |
+| `dropout` | 0.05 | Leve regularização contra overfit em dataset pequeno. |
+| `keys` | `q_proj`, `v_proj` | Default. Cobre o suficiente; k/o dobra parâmetros sem ganho relevante aqui. |
+| `num_layers` | 16 | Top 16 das 28 camadas do Qwen2.5-1.5B — cobre as mais semânticas. |
+| `learning_rate` | 5e-5 | Meio do range típico (1e-5 a 1e-4). |
+| `batch_size` | 1 | M1 16 GB não comporta mais. |
+| `grad_accumulation_steps` | 4 | Batch efetivo = 4, igual ao default do mlx-lm. |
+| `iters` | 300 | ≈ 3 epochs (404 train / batch 4 → 101 iters/epoch). |
+| `max_seq_length` | 1024 | Cobre o máximo real do dataset (935 tokens). |
+| `steps_per_eval` | 25 | 12 medições de val durante o treino — bom pra ver overfitting cedo. |
+
+**Por que NÃO usamos as alternativas comuns:**
+- **rank=16**: dobraria memória e probabilidade de overfittar em 404 exemplos.
+- **LR=1e-4**: bom em treinos longos com batch grande; com nossa config
+  pode ficar instável.
+- **seq_len=2048**: dobraria memória sem ganho (nosso máximo é 935).
+
+**Filosofia complementar:** estamos fazendo fine-tuning para **ensinar
+estilo/formato** (jargão médico, estrutura de laudo, registro PT-BR), e
+**não** para incutir conhecimento factual. Conhecimento factual virá do
+RAG na Fase 4 — por isso parâmetros conservadores são apropriados.
+
+---
+
+## 11. Avaliação: perplexity + 10 prompts qualitativos
+
+**Contexto.** Como medir se o fine-tuning "funcionou"? Loss de treino
+sozinha não basta — pode estar baixa por overfitting.
+
+**Decisão.** Dupla camada de avaliação:
+
+1. **Quantitativa: perplexity no test set** (50+ exemplos held-out, não
+   vistos no treino). Calculada com `mlx_lm.lora --test`. Comparamos
+   `ppl_base` vs `ppl_fine_tuned`. Esperamos queda de 30-50% no domínio.
+2. **Qualitativa: 10 prompts fixos** em PT-BR cobrindo 5 categorias
+   (clínica geral, formato, conduta, segurança/ética, fora de escopo).
+   Rodados em base e fine-tuned, salvos lado-a-lado em
+   `evaluation/comparison.md` — leitura humana é o que valida estilo,
+   adequação clínica e cuidado ético.
+
+**Por quê.**
+- Só perplexity esconde regressões qualitativas (modelo pode aprender
+  formato e perder o cuidado ético, por exemplo).
+- Só qualitativa é subjetiva — perplexity dá número objetivo.
+- 10 prompts cabem confortavelmente num PDF/relatório técnico e no
+  vídeo de 15 min sem virar uma enxurrada.
+
+---
+
+## 12. Wrapper LangChain: `BaseChatModel` (não `LLM` cru)
+
+**Contexto.** Pra integrar o modelo fine-tuned a chains, agentes e
+guardrails do LangChain nas próximas fases, precisamos de uma classe
+Python compatível com a interface deles. O LangChain expõe duas raízes:
+`BaseLLM` (modelos de completar texto, single-turn) e `BaseChatModel`
+(modelos de chat com `messages`, multi-turn).
+
+**Decisão.** A classe `MedicalLLM` herda de `BaseChatModel`.
+
+**Por quê.**
+- O Qwen2.5-Instruct **é um modelo de chat** — foi treinado com o template
+  `messages` (system/user/assistant), e nosso fine-tuning manteve esse
+  formato. Encapsular como `BaseLLM` (single-prompt text completion)
+  exigiria converter messages → string e perderia o template do tokenizer.
+- A maioria das integrações modernas do LangChain (RAG via
+  `create_retrieval_chain`, agentes, `RunnableWithMessageHistory`) assume
+  `BaseChatModel`. Usar `BaseLLM` complicaria a Fase 4 em diante.
+- `BaseChatModel` preserva a noção de SystemMessage/HumanMessage/AIMessage
+  até o fim do pipeline, o que casa com nossos guardrails (Fase 6) que
+  vão inspecionar/filtrar por papel.
+
+**Implementação:** apenas `_generate` (sync) implementado nesta fase.
+Streaming (`_stream`) e async (`_agenerate`/`_astream`) ficam para a
+Fase 6 (UI Streamlit), usando `mlx_lm.stream_generate` já disponível.
+
+---
+
+## 13. System prompt clínico aplicado na Fase 3 (antes de RAG/guardrails)
+
+**Contexto.** A Fase 2 entregou um modelo que **aprendeu formato/estilo
+médico**, mas mostrou regressão clara em comportamento de segurança:
+respondia "Prescreva amoxicilina" diretamente em vez de pedir contexto
+clínico (documentado em `finetuning/README.md`, seção
+*Histórico de treinamento*).
+
+**Decisão.** Aplicar um **system prompt clínico forte** já na Fase 3,
+antes de qualquer guardrail externo, e medir empiricamente quanto o
+prompt sozinho consegue corrigir do comportamento. O system prompt vive
+em `assistant/prompts.py` como constante `MEDICAL_SYSTEM_PROMPT` e é
+aplicado automaticamente pelo `MedicalLLM.build_default_llm()`.
+
+**Por quê fazer isso aqui em vez de esperar a Fase 6 (guardrails)?**
+- O system prompt é o "guardrail mais barato" — não custa nem latência
+  nem inferência extra, e o efeito pode ser mensurado em isolamento.
+- Saber **quanto** do problema o system prompt resolve evita
+  super-engenharia: se ele já cobrir 80% dos casos, a Fase 6 foca nos
+  20% que escaparem; se cobrir 30%, ajustamos a estratégia da Fase 6.
+- O comparativo gerado por `evaluation/eval_system_prompt.py` produz
+  evidência empírica em `evaluation/comparison_phase3.md` — material
+  direto pro relatório e pro vídeo.
+
+**Como o system prompt é gerenciado:**
+- Default da instância (`MedicalLLM(system_prompt=...)`).
+- Se o input do `.invoke()` já contém `SystemMessage`, o do usuário
+  ganha (princípio: chain do usuário > default da instância).
+- No `demo_chat.py`, o comando `/system "..."` permite trocar ao vivo —
+  útil pra demonstrar no vídeo que o mesmo modelo se comporta diferente
+  com prompts diferentes.
+
+**Versão `STRICT` reservada para a Fase 6:** por enquanto idêntica ao
+default; será endurecida quando construirmos os guardrails (ex: refusal
+mais agressivo, formato JSON obrigatório, regras pra emergência).
+
