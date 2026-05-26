@@ -121,7 +121,7 @@ via um LLM mais forte que o nosso modelo base.
 **Decisão.** Usar **OpenAI `gpt-4o-mini`** como "professor sintético":
 - ~145 chamadas totais (protocolos, templates, pacientes em batches,
   Q&A em batches).
-- Custo estimado: **US$ 0,50–0,80** com buffer para retries.
+- Custo real: **US$ 0,06** com buffer para retries.
 - Validação de schema com Pydantic + descarte de respostas com
   placeholders literais.
 
