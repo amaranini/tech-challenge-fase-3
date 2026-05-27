@@ -16,8 +16,9 @@
 | **Templates de documentos** | OpenAI `gpt-4o-mini`, 10 tipos × 2 variações | `synthetic/templates/*.md` |
 | **Pacientes (50)** | Faker pt_BR (demográficos) + OpenAI (histórico, alergias, medicações) | `synthetic/patients.csv` |
 | **Pares Q&A (400)** | OpenAI `gpt-4o-mini`, batches de 5, rotacionando especialidades × categorias | `synthetic/qa_pairs.jsonl` |
+| **Recusas (60)** | OpenAI `gpt-4o-mini`, taxonomia 30 out-of-scope + 30 clínicas, com filtro textual de qualidade | `synthetic/refusals.jsonl` |
 
-Total estimado: ~505 exemplos no dataset final.
+Total estimado: ~565 exemplos no dataset final.
 
 ## Como reproduzir (passo a passo)
 
@@ -42,14 +43,18 @@ Total estimado: ~505 exemplos no dataset final.
    uv run pytest data/test_anonymization.py -v
    ```
 
-4. **Gerar o dataset sintético** (gasta API, ~US$ 0,50–0,80):
+4. **Gerar o dataset sintético** (gasta API, ~US$ 0,55–0,90):
 
    ```bash
-   uv run python data/generate_synthetic.py
+   uv run python data/generate_synthetic.py            # gera tudo
+   uv run python data/generate_synthetic.py --only refusals   # só recusas
    ```
    O script mostra a estimativa de custo e pede confirmação `s/N` antes
    de chamar a OpenAI. Salva incrementalmente em `data/synthetic/` —
    se cair no meio, é só rodar de novo (ele pula o que já existe).
+
+   A flag `--only {protocols,templates,patients,qa,refusals,all}` permite
+   gerar uma fonte específica (útil pra controlar custo ou retomar partes).
 
 5. **Anonimizar + dividir em train/val/test**:
 
@@ -60,7 +65,19 @@ Total estimado: ~505 exemplos no dataset final.
 6. **Inspecionar amostras**:
 
    ```bash
+   # 5 amostras aleatórias do train
    uv run python data/inspect_dataset.py --split train --n 5
+
+   # só o assistant, conteúdo completo, de um arquivo bruto
+   uv run python data/inspect_dataset.py --file data/synthetic/refusals.jsonl --n 10 --show assistant --full
+
+   # contagem de exemplos por source_type (via system message)
+   uv run python data/inspect_dataset.py --split train --source-stats
+
+   # validação textual: conta + mostra exemplos cujo assistant contém o padrão
+   uv run python data/inspect_dataset.py --split train --grep "não posso"
+   uv run python data/inspect_dataset.py --split train --grep "fora do escopo"
+
    cat data/processed/dataset_report.md
    ```
 

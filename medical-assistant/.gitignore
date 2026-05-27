@@ -43,10 +43,27 @@ data/processed/*
 # Vector DB persistido
 data/chroma/
 
+# ---- Fase 4: índice RAG (Chroma) e banco de pacientes (SQLite) ----
+# Ambos são reconstruídos pelos scripts de build a partir de data/synthetic/.
+assistant/data/
+
 # ---- Saídas de fine-tuning (modelos pesados) ----
-finetuning/outputs/
+# Dataset convertido pro formato MLX é regenerável → ignorar.
+finetuning/data/
+
+# Outputs: ignorar tudo exceto os entregáveis finais (adapter, log e gráficos).
+finetuning/output/*
+!finetuning/output/.gitkeep
+!finetuning/output/training_log.json
+!finetuning/output/loss_curve.png
+!finetuning/output/lr_schedule.png
+!finetuning/output/adapters/
+finetuning/output/adapters/*
+!finetuning/output/adapters/adapters.safetensors
+!finetuning/output/adapters/adapter_config.json
+
+# Formatos gerais de modelos pesados (em qualquer outro lugar).
 *.gguf
-*.safetensors
 *.bin
 *.pt
 *.ckpt

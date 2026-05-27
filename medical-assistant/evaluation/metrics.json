@@ -1,0 +1,22 @@
+{
+  "perplexity": {
+    "base": {
+      "test_loss": 2.0746,
+      "test_ppl": 7.96,
+      "tokens_evaluated": 10142,
+      "examples_evaluated": 51
+    },
+    "fine_tuned": {
+      "test_loss": 0.9649,
+      "test_ppl": 2.62,
+      "tokens_evaluated": 10142,
+      "examples_evaluated": 51
+    },
+    "delta_pct": -67.09
+  },
+  "inference_time_sec": {
+    "base_mean": 8.49,
+    "fine_tuned_mean": 3.97
+  },
+  "num_prompts": 10
+}

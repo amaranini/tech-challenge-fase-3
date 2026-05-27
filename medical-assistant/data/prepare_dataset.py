@@ -34,6 +34,7 @@ PROTOCOLS_DIR = SYNTHETIC_DIR / "protocols"
 TEMPLATES_DIR = SYNTHETIC_DIR / "templates"
 PATIENTS_CSV = SYNTHETIC_DIR / "patients.csv"
 QA_JSONL = SYNTHETIC_DIR / "qa_pairs.jsonl"
+REFUSALS_JSONL = SYNTHETIC_DIR / "refusals.jsonl"
 
 REPORT_PATH = PROCESSED_DIR / "dataset_report.md"
 
@@ -58,6 +59,14 @@ SYSTEM_PATIENT = (
 SYSTEM_QA = (
     "Você é um assistente médico especializado em prática clínica. "
     "Responda dúvidas de médicos com base em condutas reconhecidas."
+)
+SYSTEM_REFUSAL = (
+    "Você é um assistente médico que prioriza segurança e ética clínica. "
+    "Quando o pedido está fora do escopo médico, recuse e aponte onde a "
+    "pessoa pode buscar a resposta. Quando o pedido é clínico mas faltam "
+    "dados ou exige avaliação presencial, NÃO entregue dose, diagnóstico "
+    "definitivo ou conduta — enumere os dados que faltam ou oriente a "
+    "buscar atendimento adequado."
 )
 
 
@@ -182,6 +191,32 @@ def load_qa() -> list[dict[str, Any]]:
     return items
 
 
+def load_refusals() -> list[dict[str, Any]]:
+    """Lê refusals.jsonl (gerado por generate_synthetic.py --only refusals)."""
+    if not REFUSALS_JSONL.exists():
+        return []
+    items = []
+    with REFUSALS_JSONL.open("r", encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            items.append({
+                "source_type": "refusal",
+                "source_file": f"refusals.jsonl#{i}",
+                "messages": [
+                    {"role": "system", "content": SYSTEM_REFUSAL},
+                    {"role": "user", "content": rec["pergunta"]},
+                    {"role": "assistant", "content": rec["resposta"]},
+                ],
+            })
+    return items
+
+
 # ----- Anonimização do item inteiro -----
 def anonymize_item(item: dict[str, Any]) -> AnonymizationResult:
     """Anonimiza todas as mensagens do item, mantendo consistência interna."""
@@ -207,20 +242,43 @@ def anonymize_item(item: dict[str, Any]) -> AnonymizationResult:
 
 
 # ----- Split estratificado -----
+# Ordem FIXA de categorias para o stratified_split. Manter "refusal" por
+# ÚLTIMO preserva o estado do rng nas categorias anteriores — exemplos de
+# protocol/template/patient/qa caem nos mesmos splits que caíam antes da
+# introdução de recusas (comparabilidade com o modelo já treinado).
+SOURCE_ORDER = ["patient", "protocol", "qa", "template", "refusal"]
+
+
 def stratified_split(
     items: list[dict[str, Any]],
     train_frac: float = TRAIN_FRAC,
     val_frac: float = VAL_FRAC,
     seed: int = SEED,
 ) -> tuple[list, list, list]:
-    """Split estratificado por source_type, com seed fixa."""
+    """Split estratificado por source_type, com seed fixa.
+
+    Itera as categorias em SOURCE_ORDER (não em ordem alfabética) para
+    manter os splits das categorias antigas idênticos aos da Fase 1
+    quando refusals é adicionada.
+    """
     by_type: dict[str, list] = {}
     for item in items:
         by_type.setdefault(item["source_type"], []).append(item)
 
+    # Sanity check: qualquer source_type fora do SOURCE_ORDER seria silenciado.
+    unknown = set(by_type) - set(SOURCE_ORDER)
+    if unknown:
+        raise ValueError(
+            f"source_type(s) desconhecido(s) em SOURCE_ORDER: {unknown}. "
+            f"Adicione-os à constante SOURCE_ORDER em prepare_dataset.py."
+        )
+
     rng = random.Random(seed)
     train, val, test = [], [], []
-    for source_type, group in sorted(by_type.items()):
+    for source_type in SOURCE_ORDER:
+        group = by_type.get(source_type, [])
+        if not group:
+            continue
         rng.shuffle(group)
         n = len(group)
         n_train = int(n * train_frac)
@@ -259,6 +317,30 @@ def write_jsonl(items: list[dict[str, Any]], path: Path) -> None:
 
 
 # ----- Relatório -----
+# Padrões textuais que indicam recusa — usados pra validar via conteúdo
+# que as recusas chegaram aos splits (não dependem de metadado).
+REFUSAL_GREP_PATTERNS = (
+    "não posso", "fora do escopo", "fora do meu escopo",
+    "preciso de mais", "consulte um", "procure um",
+    "atendimento presencial", "samu", "192", "pronto-socorro",
+)
+
+
+def _count_refusal_patterns(items: list) -> dict[str, int]:
+    """Conta quantos items contêm cada padrão de recusa no assistant."""
+    counts = {p: 0 for p in REFUSAL_GREP_PATTERNS}
+    for it in items:
+        # Concatena conteúdo do assistant (último) — onde a recusa aparece.
+        assistant_text = " ".join(
+            m["content"].lower() for m in it["messages"]
+            if m["role"] == "assistant"
+        )
+        for p in REFUSAL_GREP_PATTERNS:
+            if p in assistant_text:
+                counts[p] += 1
+    return counts
+
+
 def build_report(
     train: list, val: list, test: list, entities_counter: Counter
 ) -> str:
@@ -276,6 +358,11 @@ def build_report(
 
     s_train, s_val, s_test = stats(train), stats(val), stats(test)
     total = s_train["total"] + s_val["total"] + s_test["total"]
+
+    # Validação textual de recusas (independente de metadado).
+    refusal_train = _count_refusal_patterns(train)
+    refusal_val = _count_refusal_patterns(val)
+    refusal_test = _count_refusal_patterns(test)
 
     lines = [
         "# Relatório do dataset",
@@ -310,6 +397,22 @@ def build_report(
     for ent_type, count in entities_counter.most_common(10):
         lines.append(f"| {ent_type} | {count} |")
     lines.append("")
+    lines.append("## Validação textual de recusas")
+    lines.append("")
+    lines.append(
+        "Contagem de exemplos cujo assistant contém cada padrão de "
+        "recusa (verificação independente de metadado — confirma que "
+        "as recusas geradas chegaram efetivamente aos splits)."
+    )
+    lines.append("")
+    lines.append("| Padrão | train | val | test |")
+    lines.append("|---|---|---|---|")
+    for pat in REFUSAL_GREP_PATTERNS:
+        lines.append(
+            f"| `{pat}` | {refusal_train[pat]} | {refusal_val[pat]} | "
+            f"{refusal_test[pat]} |"
+        )
+    lines.append("")
     lines.append(f"_Gerado a partir de `data/synthetic/` com seed = {SEED}_")
     return "\n".join(lines) + "\n"
 
@@ -325,12 +428,14 @@ def main() -> int:
     templates = load_templates()
     patients = load_patients()
     qa = load_qa()
+    refusals = load_refusals()
     print(f"  protocolos: {len(protocols)}")
     print(f"  templates:  {len(templates)}")
     print(f"  pacientes:  {len(patients)}")
     print(f"  Q&A:        {len(qa)}")
+    print(f"  recusas:    {len(refusals)}")
 
-    all_items = protocols + templates + patients + qa
+    all_items = protocols + templates + patients + qa + refusals
     if not all_items:
         print("\n❌ Nenhum item encontrado em data/synthetic/. Rode antes:")
         print("   uv run python data/generate_synthetic.py")

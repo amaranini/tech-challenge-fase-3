@@ -1,0 +1,82 @@
+# Configuração de fine-tuning LoRA para Qwen2.5-1.5B-Instruct via mlx-lm.
+# Esta é a config canônica do mlx-lm — todos os campos seguem a doc oficial:
+# https://github.com/ml-explore/mlx-lm/blob/main/mlx_lm/LORA.md
+
+# ─── Modelo base ─────────────────────────────────────────────────────────────
+# Versão bf16 (full precision) — versões quantizadas (4bit/8bit) NÃO permitem
+# treino, só inferência. Tamanho do download: ~3 GB.
+model: "mlx-community/Qwen2.5-1.5B-Instruct-bf16"
+
+# ─── Modo de execução ────────────────────────────────────────────────────────
+train: true             # rodar treino
+fine_tune_type: lora    # alternativas: full, dora
+optimizer: adamw
+
+# ─── Dados ───────────────────────────────────────────────────────────────────
+# Diretório com train.jsonl, valid.jsonl, test.jsonl (formato chat/messages).
+data: "finetuning/data"
+
+# Reprodutibilidade — mesma seed das fases anteriores.
+seed: 42
+
+# ─── Quais camadas recebem LoRA ──────────────────────────────────────────────
+# Qwen2.5-1.5B tem 28 camadas no total; 16 cobre as mais altas (mais semânticas).
+# Para reduzir memória, pode-se cair pra 8.
+num_layers: 16
+
+# ─── Batch e iterações ───────────────────────────────────────────────────────
+# Batch físico de 1 para caber no M1 16GB.
+# grad_accumulation_steps=4 dá um batch efetivo de 4 sem custo de memória extra.
+batch_size: 1
+grad_accumulation_steps: 4
+
+# 300 iters ≈ 3 epochs (404 train / batch efetivo 4 = 101 iters por epoch).
+iters: 300
+
+# Tamanho máximo de exemplo (em tokens). Nosso dataset tem max=935.
+# 1024 cobre 100% sem truncar e economiza ~50% de memória vs 2048.
+max_seq_length: 1024
+
+# ─── Taxa de aprendizado ─────────────────────────────────────────────────────
+# 5e-5 está no meio do range típico para LoRA (1e-5 a 1e-4).
+# Se loss não desce, subir para 1e-4. Se NaN, cair para 1e-5.
+learning_rate: 5e-5
+
+# ─── Validação e checkpoint ──────────────────────────────────────────────────
+# A cada 25 iters, calcula val loss (12 medições no treino completo).
+steps_per_eval: 25
+val_batches: 25         # quantos batches do val.jsonl usar a cada avaliação
+
+# Imprime progresso a cada 10 iters.
+steps_per_report: 10
+
+# Salva o adapter a cada 100 iters (3 checkpoints intermediários + o final).
+save_every: 100
+
+# Diretório onde os adapters serão salvos.
+adapter_path: "finetuning/output/adapters"
+
+# Para retomar um treino interrompido, descomente e aponte para o último .safetensors.
+resume_adapter_file: null
+
+# ─── Teste automático (deixamos para evaluate.py) ────────────────────────────
+test: false
+test_batches: 100
+
+# ─── Memória ─────────────────────────────────────────────────────────────────
+# grad_checkpoint=true reduz memória ~30% em troca de ~20% mais lento.
+# Ligar SÓ se OOM. No M1 16GB com nossa config, não deve ser preciso.
+grad_checkpoint: false
+
+# ─── Parâmetros específicos da LoRA ──────────────────────────────────────────
+lora_parameters:
+  # Quais sub-módulos da atenção recebem adapter (default do mlx-lm).
+  # Adicionar k_proj e o_proj dobra parâmetros LoRA com ganho marginal em
+  # dataset pequeno — pular.
+  keys: ["self_attn.q_proj", "self_attn.v_proj"]
+  # Largura das matrizes de adaptação. Maior = mais capacidade, mais memória.
+  rank: 8
+  # Multiplicador aplicado na saída LoRA antes de somar ao peso original.
+  scale: 20.0
+  # Dropout leve contra overfitting em dataset pequeno (404 exemplos train).
+  dropout: 0.05

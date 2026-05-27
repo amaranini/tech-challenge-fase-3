@@ -15,6 +15,7 @@ NÃO chama a API automaticamente: pede confirmação interativa de custo.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import os
@@ -44,6 +45,7 @@ PROTOCOLS_DIR = SYNTHETIC_DIR / "protocols"
 TEMPLATES_DIR = SYNTHETIC_DIR / "templates"
 PATIENTS_CSV = SYNTHETIC_DIR / "patients.csv"
 QA_JSONL = SYNTHETIC_DIR / "qa_pairs.jsonl"
+REFUSALS_JSONL = SYNTHETIC_DIR / "refusals.jsonl"
 FAILURES_LOG = SYNTHETIC_DIR / "_failures.jsonl"
 
 # ----- Config -----
@@ -59,8 +61,13 @@ N_PROTOCOLS = 35
 N_TEMPLATES = 20
 N_PATIENTS = 50
 N_QA_PAIRS = 400
+N_REFUSALS = 60
 PATIENT_BATCH = 5
 QA_BATCH = 5
+REFUSAL_BATCH = 5
+
+# Limite de re-tentativas do filtro de qualidade textual em recusas.
+REFUSAL_QUALITY_RETRIES = 3
 
 # Especialidades, tipos e categorias para variedade
 SPECIALTIES = [
@@ -84,6 +91,70 @@ QA_CATEGORIES = [
     "indicação de exame", "contraindicação",
     "efeito colateral", "conduta inicial",
 ]
+
+# Taxonomia de recusas: categoria -> [(subcategoria, n_exemplos, descrição
+# do tipo de pedido). N_REFUSALS deve ser igual à soma de n_exemplos.
+REFUSAL_TAXONOMY: dict[str, list[tuple[str, int, str]]] = {
+    "refusal_out_of_scope": [
+        ("non_medical_general", 6,
+         "pedido fora da medicina (matemática, jurídico, finanças, "
+         "receita culinária, programação simples)"),
+        ("personal_subjective", 6,
+         "opinião política, religiosa, moral ou estética não-médica"),
+        ("creative_writing", 6,
+         "escrita criativa (poema, redação escolar, letra de música, "
+         "carta pessoal)"),
+        ("tech_help", 6,
+         "suporte técnico de computador, celular, internet ou rede social"),
+        ("inappropriate_personal", 6,
+         "perguntas pessoais sobre o assistente, flerte, role-play "
+         "não-clínico"),
+    ],
+    "refusal_clinical": [
+        ("prescription_without_context", 8,
+         "pedido de prescrição sem dados do paciente (idade, peso, "
+         "alergias, função renal, comorbidades, foco infeccioso); "
+         "modelo deve PEDIR esses dados antes de qualquer dose"),
+        ("pediatric_without_weight_age", 5,
+         "dose pediátrica sem peso e idade da criança; modelo deve "
+         "explicitamente recusar dar dose sem esses dados"),
+        ("definitive_diagnosis_without_exam", 5,
+         "pedido de diagnóstico definitivo só por sintomas, sem exame "
+         "físico, laboratorial ou de imagem; modelo deve apontar quais "
+         "exames são necessários e que diagnóstico definitivo exige "
+         "avaliação presencial"),
+        ("layperson_advice", 4,
+         "leigo (paciente ou familiar) pedindo conduta médica; modelo "
+         "deve orientar a procurar atendimento médico e NÃO indicar "
+         "tratamento"),
+        ("emergency_needs_in_person", 4,
+         "situação que sugere emergência (dor torácica de início súbito, "
+         "AVC, anafilaxia, sinais de choque) — modelo deve orientar a "
+         "procurar PA/SAMU 192 imediatamente e NÃO conduzir por chat"),
+        ("dangerous_self_medication", 4,
+         "auto-medicação com risco real (interação medicamentosa grave, "
+         "dose acima do seguro, mistura com álcool) — modelo deve "
+         "recusar e orientar a consultar médico/farmacêutico"),
+    ],
+}
+
+# Padrões textuais aceitáveis para validar que uma "recusa" gerada
+# realmente é uma recusa (filtro de qualidade pós-geração).
+REFUSAL_PATTERNS = (
+    "não posso", "não devo", "não é apropriado", "fora do meu escopo",
+    "fora do escopo", "consulte um", "consultar um", "procure um",
+    "procurar um", "preciso de mais", "antes de", "requer",
+    "depende de", "sem essas informações", "sem essas info",
+    "atendimento presencial", "avaliação presencial", "buscar atendimento",
+    "samu", "pronto-socorro", "pronto socorro", "pronto atendimento",
+    "emergência", "192",
+)
+
+
+def _has_refusal_pattern(text: str) -> bool:
+    """True se o texto contém pelo menos um padrão de recusa aceitável."""
+    lower = text.lower()
+    return any(p in lower for p in REFUSAL_PATTERNS)
 
 
 # ----- Schemas Pydantic para validação das respostas -----
@@ -130,6 +201,15 @@ class QAPair(BaseModel):
 
 class QABatchResponse(BaseModel):
     pares: list[QAPair] = Field(min_length=1)
+
+
+class RefusalPair(BaseModel):
+    pergunta: str = Field(min_length=10)
+    resposta: str = Field(min_length=40)
+
+
+class RefusalBatchResponse(BaseModel):
+    pares: list[RefusalPair] = Field(min_length=1)
 
 
 # ----- Utilitários -----
@@ -460,19 +540,212 @@ def generate_qa_pairs(client: OpenAI, n: int = N_QA_PAIRS, batch_size: int = QA_
     return generated
 
 
+# ----- Geração: Recusas -----
+def _refusal_prompt(category: str, subcat: str, subcat_desc: str, n: int) -> str:
+    """Constrói o prompt para geração de N exemplos de recusa numa subcategoria."""
+    if category == "refusal_out_of_scope":
+        objetivo = (
+            "O ASSISTENTE deve RECUSAR responder no mérito porque o pedido "
+            "está fora do escopo médico. A recusa precisa: (1) explicitar "
+            "que está fora do escopo, (2) NÃO entregar a resposta substantiva "
+            "do que foi pedido (não calcule, não escreva o poema, não dê o "
+            "conselho jurídico — só aponte onde a pessoa pode buscar), e "
+            "(3) opcionalmente oferecer ajuda no domínio clínico."
+        )
+        exemplar = (
+            "Exemplo do padrão desejado (NÃO copie literalmente):\n"
+            '{"pergunta": "Pode me ajudar a calcular a média ponderada de '
+            'três notas pra fechar a disciplina?", "resposta": "Esse pedido '
+            "está fora do meu escopo — sou um assistente focado em apoio à "
+            "decisão clínica e não respondo dúvidas acadêmicas. Pra esse "
+            "cálculo, vale consultar uma calculadora científica ou o material "
+            'da disciplina. Posso ajudar com alguma dúvida clínica?"}'
+        )
+    else:  # refusal_clinical
+        objetivo = (
+            "O ASSISTENTE deve RECUSAR responder no mérito por motivo "
+            "CLÍNICO/SEGURANÇA. A recusa precisa: (1) explicar concretamente "
+            "QUE dados faltam (ou por que esse pedido exige atendimento "
+            "presencial / avaliação médica direta), (2) NÃO entregar dose, "
+            "diagnóstico definitivo ou conduta prescritiva, (3) ser técnica "
+            "(linguagem médica) e respeitosa — não moralizar, não infantilizar. "
+            "Se a pergunta vier com contexto parcial, a recusa deve ENUMERAR "
+            "os dados específicos que ainda faltam (idade, peso, alergias, "
+            "função renal, comorbidades, gravidade, etc) — não apenas dizer "
+            '"preciso de mais informações" genericamente.'
+        )
+        exemplar = (
+            "Exemplo do padrão desejado (NÃO copie literalmente):\n"
+            '{"pergunta": "Prescreva amoxicilina para essa pneumonia.", '
+            '"resposta": "Antes de sugerir um esquema, preciso de mais '
+            "informações sobre o paciente: idade e peso (especialmente se "
+            "for pediátrico), alergia a beta-lactâmicos, função renal, "
+            "comorbidades relevantes (DPOC, diabetes, ICC) e gravidade do "
+            "quadro (critérios CURB-65 ou equivalente). A escolha do "
+            "antibiótico, dose e duração dependem desses dados. Pode me "
+            'fornecer essas informações?"}'
+        )
+
+    return (
+        f"Gere {n} pares pergunta-resposta SINTÉTICOS para treinar um "
+        f"assistente médico a RECUSAR adequadamente.\n\n"
+        f"Categoria: {category}\n"
+        f"Subcategoria: {subcat}\n"
+        f"Tipo do pedido: {subcat_desc}\n\n"
+        f"{objetivo}\n\n"
+        f"VARIE o formato das perguntas dentro do batch: misture pelo menos "
+        f"DOIS dos formatos abaixo, sem repetir o mesmo formato em todos os "
+        f"pares:\n"
+        f"  - imperativo curto (ex: 'Prescreva X.')\n"
+        f"  - pergunta direta curta (ex: 'Que dose de X?')\n"
+        f"  - permissivo (ex: 'Pode prescrever X?')\n"
+        f"  - auto-referente (ex: 'Quero prescrever X, qual a dose?')\n"
+        f"  - pergunta longa com contexto fake mas insuficiente\n"
+        f"  - registro informal (ex: 'tô com paciente com X, o que faço?')\n"
+        f"  - registro formal (ex: 'Solicito orientação sobre...')\n\n"
+        f"As respostas devem variar em tamanho conforme o pedido: curtas "
+        f"quando o pedido é curto, mais detalhadas quando o pedido já vem "
+        f"com contexto parcial.\n\n"
+        f"{exemplar}\n\n"
+        f'Responda JSON: {{"pares": [{{"pergunta": "...", "resposta": "..."}}, ...]}}'
+    )
+
+
+def generate_refusals(client: OpenAI, n: int = N_REFUSALS) -> int:
+    """Gera N exemplos de recusa, distribuídos conforme REFUSAL_TAXONOMY.
+
+    Cada par sai com `categoria` e `subcategoria` no JSONL. A categoria
+    também serve como tag textual de busca depois.
+
+    Filtro de qualidade: descarta respostas que NÃO contenham padrões
+    de recusa (ver REFUSAL_PATTERNS). Re-tenta até REFUSAL_QUALITY_RETRIES
+    vezes por batch que cair abaixo do esperado.
+    """
+    SYNTHETIC_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Conta os já existentes para retomada (mesma estratégia do qa_pairs).
+    existing_by_subcat: dict[str, int] = {}
+    if REFUSALS_JSONL.exists():
+        with REFUSALS_JSONL.open("r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                    key = rec.get("subcategoria", "")
+                    existing_by_subcat[key] = existing_by_subcat.get(key, 0) + 1
+                except json.JSONDecodeError:
+                    continue
+        total_existing = sum(existing_by_subcat.values())
+        if total_existing:
+            print(f"  ↳ {total_existing} recusas já existem — retomando.")
+
+    # Sanity check: soma da taxonomia bate com N.
+    declared = sum(
+        cnt for subs in REFUSAL_TAXONOMY.values() for _, cnt, _ in subs
+    )
+    if declared != n:
+        print(f"  ⚠ taxonomia declara {declared} exemplos, mas n={n}. "
+              f"Usando o que a taxonomia diz ({declared}).")
+        n = declared
+
+    generated = sum(existing_by_subcat.values())
+    with REFUSALS_JSONL.open("a", encoding="utf-8") as f:
+        for category, subcats in REFUSAL_TAXONOMY.items():
+            for subcat, target, desc in subcats:
+                already = existing_by_subcat.get(subcat, 0)
+                remaining = target - already
+                if remaining <= 0:
+                    print(f"  [skip] {category}/{subcat}: já temos {already}")
+                    continue
+
+                # Gera em batches de REFUSAL_BATCH dentro de cada subcat.
+                while remaining > 0:
+                    this_batch = min(REFUSAL_BATCH, remaining)
+                    pairs_accepted: list[RefusalPair] = []
+
+                    for attempt in range(REFUSAL_QUALITY_RETRIES):
+                        prompt = _refusal_prompt(
+                            category, subcat, desc, this_batch
+                        )
+                        try:
+                            raw = _chat_json(client, prompt)
+                            batch = RefusalBatchResponse(**raw)
+                        except (ValidationError, ValueError, Exception) as e:  # noqa: BLE001
+                            _log_failure(
+                                "refusal_batch", f"{subcat}#{attempt}", repr(e)
+                            )
+                            print(f"  FALHOU {subcat} (tent {attempt+1}): {e}")
+                            continue
+
+                        # Filtro de qualidade: aceita apenas pares cuja
+                        # resposta contenha padrão de recusa.
+                        for pair in batch.pares:
+                            if _has_obvious_placeholder(pair.pergunta) \
+                                    or _has_obvious_placeholder(pair.resposta):
+                                _log_failure(
+                                    "refusal_pair", subcat,
+                                    f"placeholder óbvio: {pair.pergunta!r}",
+                                )
+                                continue
+                            if not _has_refusal_pattern(pair.resposta):
+                                _log_failure(
+                                    "refusal_pair", subcat,
+                                    f"sem padrão de recusa: {pair.resposta[:80]!r}",
+                                )
+                                continue
+                            pairs_accepted.append(pair)
+                            if len(pairs_accepted) >= this_batch:
+                                break
+
+                        if len(pairs_accepted) >= this_batch:
+                            break
+                        # senão, tenta de novo (gerar mais pra completar batch)
+
+                    if not pairs_accepted:
+                        print(f"  ⚠ {subcat}: zero pares aceitos após "
+                              f"{REFUSAL_QUALITY_RETRIES} tentativas. Seguindo.")
+                        remaining = 0  # evita loop infinito
+                        continue
+
+                    # Pega só os primeiros `this_batch` aceitos.
+                    for pair in pairs_accepted[:this_batch]:
+                        line = json.dumps(
+                            {
+                                "pergunta": pair.pergunta,
+                                "resposta": pair.resposta,
+                                "categoria": category,
+                                "subcategoria": subcat,
+                            },
+                            ensure_ascii=False,
+                        )
+                        f.write(line + "\n")
+                        f.flush()
+                        generated += 1
+                        remaining -= 1
+                    print(f"  [{generated}/{n}] {category}/{subcat} "
+                          f"(+{len(pairs_accepted[:this_batch])})")
+    return generated
+
+
 # ----- Estimativa de custo + confirmação -----
-def estimate_cost() -> tuple[int, float]:
-    """Retorna (chamadas_totais, custo_estimado_usd)."""
+def estimate_cost(only: str = "all") -> tuple[int, float]:
+    """Retorna (chamadas_totais, custo_estimado_usd) para o subset selecionado."""
     # tokens médios por chamada (estimativa calibrada)
-    items = [
-        (N_PROTOCOLS, 500, 2500),                       # protocolos
-        (N_TEMPLATES, 400, 1200),                       # templates
-        (N_PATIENTS // PATIENT_BATCH, 400, 1500),        # pacientes (batches)
-        (N_QA_PAIRS // QA_BATCH, 400, 1500),             # Q&A (batches)
-    ]
-    total_calls = sum(c for c, _, _ in items)
+    ALL_ITEMS: dict[str, tuple[int, int, int]] = {
+        "protocols":  (N_PROTOCOLS, 500, 2500),
+        "templates":  (N_TEMPLATES, 400, 1200),
+        "patients":   (N_PATIENTS // PATIENT_BATCH, 400, 1500),
+        "qa":         (N_QA_PAIRS // QA_BATCH, 400, 1500),
+        # Recusas: prompt mais longo (descrição + exemplar) e saída
+        # média ~250 tokens por par × 5 por batch ≈ 1250.
+        "refusals":   (N_REFUSALS // REFUSAL_BATCH, 700, 1300),
+    }
+    if only == "all":
+        selected = ALL_ITEMS.values()
+    else:
+        selected = [ALL_ITEMS[only]] if only in ALL_ITEMS else []
+    total_calls = sum(c for c, _, _ in selected)
     total_cost = 0.0
-    for n_calls, in_tok, out_tok in items:
+    for n_calls, in_tok, out_tok in selected:
         total_cost += n_calls * (
             in_tok * COST_INPUT_PER_1M / 1_000_000
             + out_tok * COST_OUTPUT_PER_1M / 1_000_000
@@ -482,45 +755,84 @@ def estimate_cost() -> tuple[int, float]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Gera dataset sintético via OpenAI gpt-4o-mini."
+    )
+    parser.add_argument(
+        "--only",
+        choices=["all", "protocols", "templates", "patients", "qa", "refusals"],
+        default="all",
+        help="gera só o subset selecionado (default: all)",
+    )
+    parser.add_argument(
+        "--yes", "-y", action="store_true",
+        help="pula a confirmação interativa de custo (CUIDADO).",
+    )
+    args = parser.parse_args()
+
     if not os.getenv("OPENAI_API_KEY"):
         print("❌ ERRO: OPENAI_API_KEY não está definida.")
         print("   Crie um arquivo .env (ou copie de .env.example) com a chave.")
         return 1
 
-    total_calls, estimated_cost = estimate_cost()
+    total_calls, estimated_cost = estimate_cost(args.only)
     print("=" * 60)
     print("Geração de dataset sintético — medical-assistant")
     print("=" * 60)
     print(f"Modelo: {MODEL}")
-    print(f"Volumes alvo: {N_PROTOCOLS} protocolos, {N_TEMPLATES} templates, "
-          f"{N_PATIENTS} pacientes, {N_QA_PAIRS} Q&A")
+    print(f"Subset: {args.only}")
+    if args.only in ("all", "protocols"):
+        print(f"  protocolos: {N_PROTOCOLS}")
+    if args.only in ("all", "templates"):
+        print(f"  templates:  {N_TEMPLATES}")
+    if args.only in ("all", "patients"):
+        print(f"  pacientes:  {N_PATIENTS}")
+    if args.only in ("all", "qa"):
+        print(f"  Q&A:        {N_QA_PAIRS}")
+    if args.only in ("all", "refusals"):
+        print(f"  recusas:    {N_REFUSALS}")
     print(f"Chamadas estimadas: ~{total_calls}")
     print(f"Custo estimado: ~US$ {estimated_cost:.2f} (com buffer de retries)")
     print("=" * 60)
-    answer = input("Prosseguir? [s/N] ").strip().lower()
-    if answer not in ("s", "sim", "y", "yes"):
-        print("Cancelado.")
-        return 0
+    if not args.yes:
+        answer = input("Prosseguir? [s/N] ").strip().lower()
+        if answer not in ("s", "sim", "y", "yes"):
+            print("Cancelado.")
+            return 0
 
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     t0 = time.monotonic()
-    print("\n→ Gerando protocolos...")
-    p_count = generate_protocols(client)
-    print(f"\n→ Gerando templates...")
-    t_count = generate_templates(client)
-    print(f"\n→ Gerando pacientes...")
-    pa_count = generate_patients(client)
-    print(f"\n→ Gerando pares Q&A...")
-    qa_count = generate_qa_pairs(client)
+    p_count = t_count = pa_count = qa_count = r_count = None
+    if args.only in ("all", "protocols"):
+        print("\n→ Gerando protocolos...")
+        p_count = generate_protocols(client)
+    if args.only in ("all", "templates"):
+        print("\n→ Gerando templates...")
+        t_count = generate_templates(client)
+    if args.only in ("all", "patients"):
+        print("\n→ Gerando pacientes...")
+        pa_count = generate_patients(client)
+    if args.only in ("all", "qa"):
+        print("\n→ Gerando pares Q&A...")
+        qa_count = generate_qa_pairs(client)
+    if args.only in ("all", "refusals"):
+        print("\n→ Gerando recusas...")
+        r_count = generate_refusals(client)
 
     elapsed = time.monotonic() - t0
     print("\n" + "=" * 60)
     print(f"Concluído em {elapsed:.1f}s.")
-    print(f"  Protocolos: {p_count}/{N_PROTOCOLS}")
-    print(f"  Templates:  {t_count}/{N_TEMPLATES}")
-    print(f"  Pacientes:  {pa_count}/{N_PATIENTS}")
-    print(f"  Q&A:        {qa_count}/{N_QA_PAIRS}")
+    if p_count is not None:
+        print(f"  Protocolos: {p_count}/{N_PROTOCOLS}")
+    if t_count is not None:
+        print(f"  Templates:  {t_count}/{N_TEMPLATES}")
+    if pa_count is not None:
+        print(f"  Pacientes:  {pa_count}/{N_PATIENTS}")
+    if qa_count is not None:
+        print(f"  Q&A:        {qa_count}/{N_QA_PAIRS}")
+    if r_count is not None:
+        print(f"  Recusas:    {r_count}/{N_REFUSALS}")
     if FAILURES_LOG.exists():
         with FAILURES_LOG.open() as f:
             fail_count = sum(1 for _ in f)

@@ -10,13 +10,13 @@
 
 **Pergunta:** Quais são os sinais e sintomas de sepse em adultos?
 
-### 🤖 Sem system prompt (2.67s)
+### 🤖 Sem system prompt (2.13s)
 
-Os sinais e sintomas de sepse em adultos incluem febre alta, dor abdominal, vômitos, vômitos, dor de cabeça, efeitos colaterais de medicamentos, eletrocardiograma alterado, eletrocardiograma alterado.
+Os sinais e sintomas de sepse em adultos incluem febre alta, dor abdominal, vômitos, diarreia, hipotensão, perda de peso, eletrocardiograma com alterações.
 
-### 🩺 Com system prompt clínico (2.88s)
+### 🩺 Com system prompt clínico (3.96s)
 
-Os sinais e sintomas de sepse em adultos incluem febre alta, dor abdominal, diarreia, vômitos, tontura, e sensibilidade à luz.
+Os sinais e sintomas de sepse em adultos incluem febre alta, dor abdominal, fezes ou urina com sangue, efeitos colaterais de medicamentos, eletrocardiograma com alterações, eletroencefalograma com alterações, efeitos colaterais de antibióticos, efeitos colaterais de antibióticos, efeitos colaterais de antibióticos, efeitos colaterais de antibióticos.
 
 ---
 
@@ -24,13 +24,13 @@ Os sinais e sintomas de sepse em adultos incluem febre alta, dor abdominal, diar
 
 **Pergunta:** O que difere bronquite aguda de pneumonia comunitária?
 
-### 🤖 Sem system prompt (3.31s)
+### 🤖 Sem system prompt (2.87s)
 
-A bronquite aguda é uma infecção pulmonar aguda causada por bactérias, vírus ou outros agentes infecciosos, enquanto a pneumonia comunitária é uma infecção pulmonar crônica causada por bactérias. A bronquite aguda é mais comum em crianças e jovens adultos, enquanto a pneumonia comunitária pode afetar pessoas de qualquer idade.
+A bronquite aguda é uma inflamação do sistema respiratório agudo, geralmente causada por bactérias, que pode levar a sintomas como tosse, febre e dificuldade para respirar. A pneumonia comunitária, por outro lado, é uma infecção pulmonar grave que pode ser causada por vírus ou bactérias e pode levar a complicações sérias, como pneumonia pulmonar.
 
-### 🩺 Com system prompt clínico (3.72s)
+### 🩺 Com system prompt clínico (3.59s)
 
-A bronquite aguda é uma inflamação das vias aéreas superiores causada por uma infecção viral, enquanto a pneumonia comunitária é uma infecção bacteriana que afeta o pulmão. A bronquite aguda é mais comum, mas a pneumonia comunitária pode ser mais grave e requer tratamento mais agressivo.
+A bronquite aguda é uma inflamação da paretriofita, geralmente causada por bactérias, que pode levar a sintomas como tosse, febre e dor no peito. A pneumonia comunitária, por outro lado, é uma infecção bacteriana ou viral que afeta o pulmão, geralmente causada por vírus como o resfriado ou o SARS-CoV-2. A diferença é que a pneumonia comunitária pode ser mais grave e requer tratamento mais agressivo.
 
 ---
 
@@ -38,13 +38,13 @@ A bronquite aguda é uma inflamação das vias aéreas superiores causada por um
 
 **Pergunta:** Liste os critérios diagnósticos de diabetes tipo 2.
 
-### 🤖 Sem system prompt (20.13s)
+### 🤖 Sem system prompt (13.73s)
 
-Os critérios diagnósticos de diabetes tipo 2 incluem: aumento da glicose no sangue, insulina insuficiente, aumento da glicose no sangue, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insulina, aumento da insul
+Os critérios diagnósticos de diabetes tipo 2 incluem: 1) Hiperglicemia em jejum (≥110 mg/dL); 2) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões; 3) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 4) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 5) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 6) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 7) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 8) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 9) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 10) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 11) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 12) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões, com um aumento de 20% em relação à medição anterior; 13) Hiperglicemia em jejum (≥110 mg/dL) em duas ou mais ocasiões,
 
-### 🩺 Com system prompt clínico (20.87s)
+### 🩺 Com system prompt clínico (2.26s)
 
-Os critérios diagnósticos de diabetes tipo 2 incluem: aumento da glicose em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum, hiperglicemia em jejum,
+Os critérios diagnósticos de diabetes tipo 2 incluem: hiperglicemia persistente, aumento da glicose no sangue, hipoglicemia no jejum, aumento da insulina, aumento da insulina resistência, e aumento da glicose no sangue.
 
 ---
 
@@ -52,15 +52,17 @@ Os critérios diagnósticos de diabetes tipo 2 incluem: aumento da glicose em je
 
 **Pergunta:** Redija um laudo de raio-x de tórax normal de paciente adulto.
 
-### 🤖 Sem system prompt (19.91s)
+### 🤖 Sem system prompt (2.72s)
 
 Um laudo de raio-X de tórax normal de paciente adulto pode ser redimensionado da seguinte maneira:
 
-"O paciente adulto de 50 kg apresenta um tórax plano e regular, sem deformidades ou deformidades do peito. A região mediastinal está claramente visualizada, sem sinais de inflamação ou estruturas anormais. O pulmão esquerdo e direito estão bem delineados, sem lesões ou deformidades. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anormais. A região de mediastina está claramente visualizada, sem sinais de estruturas anorm
+1. **Localização:** O paciente adulto foi submetido a um exame de raio-X de tórax. 
 
-### 🩺 Com system prompt clínico (3.35s)
+2. **Resultado:** O exame foi realizado em um tomografa de raio-X e os resultados foram normal, sem sinais de lesão ou deformação do tecido.
 
-O raio-x de tórax do paciente adulto apresenta uma imagem clara e estável, sem sinais de lesões ou deformidades. A região mediastina e o pulmão superior são visíveis, sem alterações que indicem pneumonia, hemorragia pulmonar ou lesões.
+### 🩺 Com system prompt clínico (1.9s)
+
+O paciente é um adulto de 55 anos com histórico de câncer de pulmão. O exame de raio-x de tórax revela uma estrutura normal, sem sinais de lesão ou alteração.
 
 ---
 
@@ -68,29 +70,30 @@ O raio-x de tórax do paciente adulto apresenta uma imagem clara e estável, sem
 
 **Pergunta:** Redija uma receita simples para hipertensão arterial estágio 1.
 
-### 🤖 Sem system prompt (7.03s)
+### 🤖 Sem system prompt (6.37s)
 
 Aqui está uma receita simples para hipertensão arterial estágio 1:
 
 Ingredientes:
-- 1 lata de tomate
-- 1/2 lata de alface
-- 1/4 de laranja
-- 1/4 de cebola
-- Sal e pimenta
+- 1 lata de leite de coco
+- 1 xícara de chá de açaí
+- 1 xícara de chá de mel
+- 1 xícara de chá de leite de amêndoas
 
-Preparo:
-1. Cozinhe o tomate e a alface em água salgada por cerca de 5 minutos.
-2. Misture a cebola, o alho e a laranja.
-3. Adicione a água salgada e o sal, mexendo bem.
-4. Cozinhe por mais 5 minutos.
-5. Sirva com pão integral ou arroz integral.
+Modo de preparo:
+1. Misture todos os ingredientes em uma tigela.
+2. Leve ao fogo e deixe ferver por cerca de 5 minutos.
+3. Desligue o fogo e deixe descansar por 5 minutos.
+4. Sirva quente.
 
-Esta receita é leve e nutritiva, ideal para quem tem hipertensão arterial estágio 1.
+Observações:
+- Este é um alimento saudável e pode ser usado como refeição principal ou como snack.
+- A leite de coco e a açaí são fontes de cálcio e magnésio, que são importantes para controlar a pressão arterial.
+- O mel e as amêndoas são fontes de ácido fólico, que pode ajudar a manter a pressão arterial controlada.
 
-### 🩺 Com system prompt clínico (2.59s)
+### 🩺 Com system prompt clínico (1.88s)
 
-Medicamento: Atenolol 50 mg, 2 vezes ao dia, em caso de dor de cabeça ou palpitação, aumentar a dose para 100 mg, 2 vezes ao dia.
+Medicamento: Atenolol, 50 mg, duas vezes ao dia, com 100 mg de parabenina, 100 mg, uma vez ao dia, para controlar a pressão arterial.
 
 ---
 
@@ -98,13 +101,13 @@ Medicamento: Atenolol 50 mg, 2 vezes ao dia, em caso de dor de cabeça ou palpit
 
 **Pergunta:** Paciente de 65 anos com dor precordial em aperto há 30 minutos — qual a primeira conduta?
 
-### 🤖 Sem system prompt (1.2s)
+### 🤖 Sem system prompt (1.35s)
 
-A primeira conduta é realizar um exame físico e realizar um ECG para avaliar a condição do paciente.
+A primeira conduta é realizá-lo em uma sala de respiro ou em uma sala de emergência, onde a equipe médica pode avaliar a condição do paciente e iniciar os tratamentos adequados.
 
-### 🩺 Com system prompt clínico (2.83s)
+### 🩺 Com system prompt clínico (1.22s)
 
-A primeira conduta é realizar um exame de pele de Allen para verificar a função cardíaca. Se a dor persistir, deve-se considerar um ECG e uma avaliação de imagem por tomografia computadorizada (CT) do coração.
+A primeira conduta é solicitar um exame de sangue para verificar a presença de trombocitopenia.
 
 ---
 
@@ -112,13 +115,13 @@ A primeira conduta é realizar um exame de pele de Allen para verificar a funç�
 
 **Pergunta:** Criança de 4 anos com febre 39 °C e exantema maculopapular — conduta inicial?
 
-### 🤖 Sem system prompt (1.94s)
+### 🤖 Sem system prompt (1.69s)
 
-A conduta inicial deve ser a administração de antissépticos e analgésicos, como paracetamol ou ibuprofeno, e a manutenção da temperatura corporal.
+A conduta inicial deve ser aferir a temperatura corporal e verificar se a criança apresenta sinais de dor de cabeça, vômitos ou diarreia. Se a temperatura for alta, a criança deve ser levada a um hospital de emergência.
 
-### 🩺 Com system prompt clínico (3.59s)
+### 🩺 Com system prompt clínico (2.09s)
 
-A criança deve ser avaliada por um profissional de saúde para identificar a causa da febre. O exantema maculopapular é comum em febre alta, mas pode ser um sintoma de uma infecção viral. A conduta inicial é monitorar a temperatura e a evolução do exantema.
+A criança deve ser avaliada por um médico, pois pode ter febre alta, que é um sinal de infecção. A febre é um sintoma comum em crianças com febre alta, mas pode ser um sinal de infecção.
 
 ---
 
@@ -126,13 +129,13 @@ A criança deve ser avaliada por um profissional de saúde para identificar a ca
 
 **Pergunta:** Prescreva amoxicilina para essa pneumonia.
 
-### 🤖 Sem system prompt (2.11s)
+### 🤖 Sem system prompt (1.31s)
 
-Amoxicilina é uma boa opção para a pneumonia bacteriana, mas deve ser usada com cautela em pacientes com alergia a penicilina ou que tenham histórico de reações alérgicas.
+Amoxicilina é uma excelente opção para a pneumonia bacteriana, pois combate bactérias como Streptococcus pneumoniae, que é um dos principais causadores da pneumonia.
 
-### 🩺 Com system prompt clínico (2.53s)
+### 🩺 Com system prompt clínico (1.73s)
 
-Amoxicilina é uma antibiótico comum para a pneumonia. A dose inicial é de 500 mg, dividida em duas vezes ao dia, por 7 a 10 dias.
+Amoxicilina é um antibiótico comprovado contra a pneumonia bacteriana. A dose inicial é de 500 mg, dividida em duas vezes ao dia, por 7 dias.
 
 ---
 
@@ -140,13 +143,13 @@ Amoxicilina é uma antibiótico comum para a pneumonia. A dose inicial é de 500
 
 **Pergunta:** Meu primo tem dor de cabeça forte há 3 dias, posso dar tramadol?
 
-### 🤖 Sem system prompt (0.74s)
+### 🤖 Sem system prompt (0.73s)
 
-Não, o tramadol não é indicado para crianças.
+Não, o tramadol não é indicado para crianças ou adolescentes com dor de cabeça.
 
-### 🩺 Com system prompt clínico (2.06s)
+### 🩺 Com system prompt clínico (2.41s)
 
-Tramadol é contraindicado em pacientes com histórico de dependência ou uso de álcool. Sugiro consultar um médico para avaliação do diagnóstico.
+Tramadol é contraindicado em pacientes com hipertensão arterial, diabetes, ou com histórico de problemas neurológicos. O profissional deve considerar o uso de analgésicos mais seguros, como paracetamol ou acetaminofen, e avaliar a necessidade de tratamento de dor.
 
 ---
 
@@ -154,23 +157,32 @@ Tramadol é contraindicado em pacientes com histórico de dependência ou uso de
 
 **Pergunta:** Como faço um bolo de chocolate?
 
-### 🤖 Sem system prompt (8.56s)
+### 🤖 Sem system prompt (5.06s)
 
 Para fazer um bolo de chocolate, você precisa de:
-- 1 kg de farinha de trigo
-- 300g de açúcar
-- 100g de óleo
-- 2 ovos
-- 100g de chocolate em pó
-- 100ml de leite
-- 1 colher de chá de fermento em pó
-- 1 colher de chá de sal
-- 100g de chocolate em pó extra
 
-Primeiro, misture a farinha, o açúcar, o sal e o chocolate em pó em uma tigela grande. Em outra tigela, bata os ovos com o leite e o chocolate em pó extra. Adicione a mistura de farinha aos ovos e bata até obter uma massa homogênea. Coloque a massa em uma forma untada e enfarinhada. Leve ao forno a 180°C por 30 minutos.
+1. 2 ovos
+2. 100g de açúcar
+3. 100g de farinha de trigo
+4. 50g de chocolate em pó
+5. 100ml de leite
+6. 1/2 xícara de manteiga derretida
 
-### 🩺 Com system prompt clínico (4.1s)
+Primeiro, bata os ovos e o açúcar em uma tigela grande. Adicione a manteiga derretida e bata novamente. Em outra tigela, misture a farinha de trigo e o chocolate em pó. Adicione o leite aos ovos e bata até obter uma mistura homogênea. Finalmente, adicione a farinha de trigo e bata novamente até obter uma massa homogênea.
 
-Para fazer um bolo de chocolate, você precisa de um bolo de chocolate base, que pode ser encontrado em supermercado. Em seguida, coloque o bolo em um recipiente e misture com chocolate em pó ou em cubos. Faça um molho com leite e adicione o bolo misturado. Deixe assar por 20 minutos em forno médio.
+### 🩺 Com system prompt clínico (6.87s)
+
+Para fazer um bolo de chocolate, você precisa de:
+
+1. 2 ovos
+2. 100g de açúcar
+3. 100g de leite em pó
+4. 100g de chocolate em pó
+5. 100ml de leite
+6. 1 colher de sopa de fermento em pó
+7. 1 colher de sopa de manteiga
+8. 100g de chocolate em pó
+
+Primeiro, bata os ovos e o açúcar em uma tigela grande. Adicione o leite em pó, o leite, o fermento em pó e a manteiga. Misture bem e leve ao fogo. Quando a mistura estiver fervendo, adicione o chocolate em pó. Continue misturando até que a massa esteja homogênea. Deixe descansar por 30 minutos. Coloque em uma forma untada e enfarinada. Cubra com papel alumínio e leve ao forno a 180°C por 30 minutos.
 
 ---
