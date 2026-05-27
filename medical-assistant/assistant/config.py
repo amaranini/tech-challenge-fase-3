@@ -28,6 +28,13 @@ DEFAULT_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
 DEFAULT_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "512"))
 DEFAULT_TOP_P: float = float(os.getenv("LLM_TOP_P", "0.95"))
 
+# RAG: score mínimo (cosseno) para um chunk ir pro prompt.
+# Valor calibrado em 25 queries (10 PRESENT + 10 ABSENT + 5 BORDERLINE) em
+# 2026-05-26 — ver `evaluation/rag_threshold_calibration_results.md`.
+# 0.55 Pareto-domina 0.50 neste dataset: mesmo recall (90%), specificity sobe
+# de 70% pra 80%. Script reprodutível em `evaluation/calibrate_rag_threshold.py`.
+RAG_MIN_SCORE: float = float(os.getenv("RAG_MIN_SCORE", "0.55"))
+
 
 def validate_adapter_path() -> Path:
     """Resolve e valida `ADAPTER_PATH`. Levanta erro claro se não existir.

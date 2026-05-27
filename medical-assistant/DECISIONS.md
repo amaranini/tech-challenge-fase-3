@@ -414,3 +414,301 @@ aplicado automaticamente pelo `MedicalLLM.build_default_llm()`.
 default; será endurecida quando construirmos os guardrails (ex: refusal
 mais agressivo, formato JSON obrigatório, regras pra emergência).
 
+---
+
+## 14. Correção pós-diagnóstico: recusas no dataset (não retreinar agora)
+
+**Contexto.** Após o primeiro fine-tuning (decisão #10) o modelo mostrou
+um padrão preocupante: em 5/5 variações de "Prescreva amoxicilina pra
+essa pneumonia" (sem nenhum dado do paciente), ele respondeu direto com
+dose e duração. Zero recusas, zero pedido de mais informações.
+Documentado em `finetuning/README.md` sob *Histórico de treinamento*.
+
+**Diagnóstico.** Não é bug do treino — é gap do dataset. Investigação:
+
+- `data/synthetic/qa_pairs.jsonl` tem 8 categorias técnicas (`posologia`,
+  `manejo de emergência`, etc); **nenhuma `refusal_*`**.
+- Busca textual por padrões de recusa em train/val/test: **0 matches reais**.
+- O complemento da Fase 1 (gerar ~30 exemplos de recusa) nunca chegou ao
+  código — `generate_synthetic.py` não tinha `generate_refusals()` e
+  `prepare_dataset.py` não lia nenhum `refusals.jsonl`.
+
+**Decisão.** Adicionar uma quinta fonte ao dataset — **`refusal`** — com
+60 exemplos sintéticos cobrindo dois grupos:
+
+| Categoria | N | Subcategorias |
+|---|---|---|
+| `refusal_out_of_scope` | 30 | non_medical_general, personal_subjective, creative_writing, tech_help, inappropriate_personal |
+| `refusal_clinical` | 30 | prescription_without_context (8), pediatric_without_weight_age (5), definitive_diagnosis_without_exam (5), layperson_advice (4), emergency_needs_in_person (4), dangerous_self_medication (4) |
+
+**Por quê 60 e não mais?** ~15% do dataset (60 / 408 existentes) é
+suficiente pra cobrir os padrões sem afogar as categorias técnicas. Em
+treino LoRA pequeno (300 iters), volumes maiores de uma categoria
+desbalanceiam o aprendizado das outras.
+
+**Como foi implementado:**
+
+- `generate_synthetic.py` agora tem `generate_refusals()` com taxonomia
+  hardcoded (`REFUSAL_TAXONOMY`), prompts diferenciados por categoria
+  (out_of_scope = não responda no mérito, aponte onde buscar;
+  clinical = não dê dose/diagnóstico, enumere o que falta), variedade
+  de FORMATO de pergunta (imperativo, permissivo, formal, informal,
+  com/sem contexto) e **filtro de qualidade textual**: descarta respostas
+  que não contenham padrão de recusa (`não posso`, `fora do escopo`,
+  `preciso de mais`, etc), com até 3 retentativas por batch.
+- `generate_synthetic.py` ganhou CLI `--only {protocols,templates,...,refusals,all}`
+  pra rodar geração targeted (limita custo).
+- `prepare_dataset.py` lê `refusals.jsonl`, aplica `SYSTEM_REFUSAL`
+  distinto (que serve como assinatura textual pra identificar recusas
+  depois) e estratifica 80/10/10 — esperado: 48 train / 6 val / 6 test.
+- Ordem das categorias no `stratified_split` foi **fixada explicitamente**
+  com `refusal` por último (constante `SOURCE_ORDER`). Isso preserva o
+  estado do RNG nas categorias anteriores → os exemplos antigos caem
+  exatamente nos mesmos splits que caíam na Fase 1, então a soma é
+  estritamente aditiva.
+- `inspect_dataset.py` ganhou `--grep`, `--source-stats` (via system
+  message), `--file` (inspecionar JSONL avulso) e `--show {role}`.
+
+**O que NÃO foi feito ainda:**
+
+- **Retreino.** O retreino com o dataset corrigido será um passo
+  dedicado no final do projeto. O modelo já treinado (commit
+  `c9db603`) continua sendo a baseline pra comparação.
+- Os 5 prompts-teste de prescrição (`finetuning/README.md`) serão
+  re-rodados pós-retreino pra medir a recusa esperada.
+
+**Decisão sobre metadado `source_type`:** mantido como decisão #5 — os
+`.jsonl` finais têm apenas `messages` (formato ChatML puro pra
+mlx-lm). A identificação de recusas depois é feita por:
+
+1. **System message fingerprint** — `SYSTEM_REFUSAL` é distinto dos
+   outros system prompts, então `inspect_dataset.py --source-stats`
+   conta com precisão.
+2. **Busca textual** — `inspect_dataset.py --grep "não posso"` etc,
+   independente de qualquer metadado.
+
+**Alternativa considerada e rejeitada:** adicionar `source_type` ao
+JSONL. Rejeitada porque o loader do `mlx-lm` pode quebrar com chaves
+extras dependendo da versão, e a fingerprint via system message é
+mais robusta sem custo.
+
+---
+
+## 14. Roteamento determinístico (sem tool calling nativo do modelo)
+
+**Contexto.** O assistente precisa decidir, a cada pergunta, se vai (a)
+buscar trechos relevantes nos protocolos (RAG), (b) consultar dados de
+algum paciente específico (tool de prontuário), ou (c) ambas as coisas.
+
+A abordagem moderna popular é o **tool calling nativo**: o LLM recebe a
+descrição das ferramentas disponíveis e ele mesmo decide quando chamar
+cada uma, emitindo JSON estruturado. Funciona muito bem com modelos
+grandes (GPT-4, Claude Sonnet) — esses foram especificamente treinados
+pra isso. Mas é uma habilidade **emergente** que **não** está garantida
+em modelos pequenos.
+
+**Decisão.** **Não** usar tool calling nativo do LLM. Em vez disso,
+implementar um **roteador determinístico** em `assistant/router.py` que
+decide com base em regex + heurísticas simples, ANTES do LLM ser chamado.
+
+**Por quê:**
+- O Qwen2.5-**1.5B** é pequeno demais pra confiar em tool calling. Em
+  testes informais, ele alucina nomes de tools, mistura argumentos, ou
+  simplesmente ignora a instrução e responde direto.
+- O roteador determinístico é **100% previsível**: regex `\bP\d{4}\b`
+  detecta ID de paciente; sempre tenta RAG. Não há margem pra erro.
+- É **mais auditável**: cada decisão de roteamento pode ser logada e
+  validada nos testes (`test_router.py`).
+- **Quando subirmos pra um modelo maior** (Qwen2.5-7B ou superior, em
+  uma fase futura), trocar para tool calling nativo é uma refatoração
+  pequena e localizada — a interface `RoutingDecision` continua a mesma.
+
+**Por que isso é OK aqui:** o domínio é estreito (só temos 2 "tools": RAG
+e prontuário) e os sinais são fáceis (presença de ID = consulta paciente;
+RAG sempre ativo). Em domínios com 10+ tools, o roteador determinístico
+ficaria insustentável e tool calling nativo seria necessário.
+
+---
+
+## 15. Embedding multilíngue leve para o RAG
+
+**Contexto.** RAG precisa de um modelo de **embedding** — uma função que
+transforma texto em vetor numérico onde textos semanticamente próximos
+ficam próximos no espaço.
+
+> Analogia em uma frase: imagine cada parágrafo virando um ponto num
+> mapa imenso. "Ataque cardíaco" e "infarto agudo do miocárdio" caem
+> ao lado; "receita de bolo" cai do outro lado do mundo. Busca por
+> similaridade = "qual ponto está mais perto da minha pergunta?".
+
+**Decisão.** Usar
+`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`.
+
+**Por quê:**
+- **Multilíngue**: treinado em 50+ idiomas incluindo PT-BR. Modelos
+  só-inglês degradam em texto português.
+- **Leve**: ~120 MB no disco, 384 dimensões. Cabe folgado no Mac da
+  Ana e indexa nossos 30-40 protocolos em ~30 segundos.
+- **Boa relação custo/qualidade**: modelos maiores (LaBSE, multilingual-e5)
+  dão um pouquinho mais de precisão (3-5%), mas custam 3-5× mais memória.
+- **Padrão de mercado** para RAG em produção quando se quer multilíngue
+  com pegada pequena.
+
+**Alternativas consideradas:**
+- **`bge-m3`** (BAAI): excelente qualidade multilíngue, mas 2 GB.
+- **`text-embedding-3-small`** (OpenAI): qualidade ótima, mas exige API
+  paga e o projeto preza inferência local.
+- **Modelos médicos especializados** (BioBERT-PT, etc): muito específicos
+  e treinados sobretudo em inglês; perderíamos a generalidade.
+
+---
+
+## 16. Chunking de protocolos: header-first, ~400 tokens, overlap 80
+
+**Contexto.** Cada protocolo tem 300-500 palavras divididas em seções
+markdown (`## Indicação`, `## Conduta inicial`, `## Critérios de alta`).
+Pra RAG funcionar, precisamos quebrar cada protocolo em pedaços
+("chunks") indexáveis.
+
+**Decisão.** Usar `RecursiveCharacterTextSplitter.from_tiktoken_encoder`
+com:
+- **chunk_size = 400 tokens** (aproximação via tiktoken cl100k_base).
+- **chunk_overlap = 80 tokens**.
+- **Separadores em ordem**: `["\n## ", "\n### ", "\n\n", "\n", ". ", " ", ""]`.
+
+A ordem dos separadores faz o splitter **preferir** quebras em headers
+(`## `), depois sub-headers, depois parágrafos, depois frases. Só cai pra
+palavra/caractere se nada else estourar o limite.
+
+**Por que esses números:**
+- **400 tokens** é o ponto doce. Chunks **menores** (~200) seriam mais
+  precisos no matching de embedding (sinal semântico concentrado), mas
+  perderiam o contexto da seção — "30 mL/kg em 3h" sem saber que é sobre
+  sepse vira inútil. **Maiores** (~800) capturariam contexto demais, mas
+  o embedding dilui o sinal (vira "média de tudo que está no chunk").
+  400 captura uma "seção completa típica" de protocolo.
+- **Overlap 80** evita o problema clássico de uma frase importante cair
+  no limiar entre dois chunks e ficar sem contexto em nenhum dos dois.
+- **Header-first** preserva fronteiras semânticas. Quebrar no meio de
+  "Conduta inicial" pra grudar metade com "Critérios" seria ruim.
+
+**Trade-off com retrieval — REVISADO durante a Fase 4.**
+
+**Versão inicial (rejeitada):** não usar threshold rígido — sempre devolver
+top_k=3 e deixar o LLM decidir relevância no prompt.
+
+**Problema descoberto empiricamente:** perguntas sobre temas claramente
+**ausentes** do dataset (ex: "Como tratar Doença de Lyme?") puxavam chunks
+com score ~0.46 (de dermatologia, por causa do eritema migrans). Esses
+chunks viravam contexto autoritativo no prompt — risco real de o LLM
+ancorar a resposta neles. Caso documentado no teste
+`test_retriever_filters_irrelevant_results` em `assistant/test_rag.py`.
+
+**Decisão revisada:** aplicar **threshold absoluto `RAG_MIN_SCORE=0.55`**
+no `ProtocolRetriever.retrieve()` antes de devolver os chunks. Quando o
+filtro **zera** todos os chunks (tema realmente ausente), a chain injeta
+um **aviso transparente no prompt** instruindo o LLM: "nenhum protocolo
+relevante encontrado — sinalize incerteza, peça mais contexto, NÃO invente
+conduta". Assim resolvemos o medo original ("threshold cega o LLM") sem
+abrir mão da filtragem.
+
+**Valor 0.55 foi calibrado empiricamente** com 25 queries — ver decisão
+[#17 "Calibração empírica do threshold RAG"](#17-calibração-empírica-do-threshold-rag)
+para metodologia completa e dados.
+
+**Onde está implementado:** `assistant/rag/retriever.py` (parâmetro
+`min_score`), `assistant/config.py` (`RAG_MIN_SCORE` do env),
+`assistant/chain.py` (aplica + injeta aviso quando zera).
+
+---
+
+## 17. Calibração empírica do threshold RAG
+
+**Contexto.** A decisão #16 estabeleceu QUE havia um threshold (`RAG_MIN_SCORE`)
+e em quais arquivos ele opera. Mas o **valor** inicial (0.5) foi escolhido
+com 2 pontos de dado em mente (PAC ~0.7, Doença de Lyme ~0.46). Antes de
+fechar a Fase 4, fizemos uma calibração formal pra validar (ou corrigir)
+o número.
+
+**Problema que motivou a calibração.** O requisito de "explainability das
+respostas" do desafio significa que as fontes citadas precisam ser **de
+fato relevantes**. Sem threshold, o sistema injetava chunks vagamente
+relacionados (ex: dermatologia citada como fonte para Doença de Lyme) no
+prompt — risco de o LLM ancorar a resposta em conteúdo irrelevante e o
+usuário ver fontes "fora do tópico" no UI.
+
+**Metodologia.** Script `evaluation/calibrate_rag_threshold.py` roda 25
+queries contra o retriever **sem filtro** e coleta scores top-1/2/3:
+
+- **10 PRESENT** — temas confirmados no dataset (cobrem 10 das 15
+  especialidades; cada query mapeia 1:1 com um protocolo conhecido).
+- **10 ABSENT** — temas confirmados FORA do dataset (`grep -r` retornou
+  0 matches em todos os 35 `.md` antes de usar).
+- **5 BORDERLINE** — vagamente relacionados a temas presentes (ex:
+  "alergia respiratória crônica" ~ asma), pra estressar a fronteira.
+
+**Dados completos:** `evaluation/rag_threshold_calibration_results.md`.
+
+**Tabela de trade-off** (15 PRESENT/ABSENT × 5 thresholds):
+
+| Threshold | Recall (PRESENT passa) | Specificity (ABSENT filtra) | Comentário |
+|---|---|---|---|
+| 0.40 | 100% | 30% | lixo passa demais |
+| 0.45 | 100% | 40% | |
+| 0.50 | 90% | 70% | sacrifica 1 PRESENT (AVC, score 0.495) |
+| **0.55** | **90%** | **80%** | **escolhido — Pareto-domina 0.50** |
+| 0.60 | 80% | 90% | perde também HPB (0.564) |
+
+**Decisão.** Threshold final = **0.55**.
+
+**Justificativa de Pareto-dominância.** Em 0.55 o recall é o mesmo de
+0.50 (90% — a query "AVC isquêmico agudo" já caía em 0.495, então
+qualquer threshold ≥ 0.50 já a perde), mas a specificity sobe de 70%
+pra 80% — três ABSENT (mononucleose, esclerose múltipla, Doença de
+Lyme) que passavam o filtro em 0.50 agora são corretamente cortados em
+0.55. Não há justificativa pra manter 0.50.
+
+**Trade-off aceito conscientemente:** a query BORDERLINE "infecção
+pulmonar viral" (score 0.546) cai pra "sem fonte" em 0.55. **Isso é
+clinicamente correto** — o protocolo de PAC é especificamente para
+pneumonia *bacteriana*, e sugerir antibiótico baseado nele para uma
+infecção viral seria conduta inadequada. A perda da fonte protege o
+usuário, não prejudica.
+
+**Validação A/B com `eval_rag.py`** (15 perguntas, com 0.50 e 0.55):
+- 100% de roteamento correto nos dois (filtragem só afeta quantas
+  fontes vão pro prompt, não o roteamento).
+- **5 casos** mudaram fontes; **todos pra melhor** (menos chunks
+  irrelevantes); **nenhum perdeu informação legítima**.
+- Vitórias claras: perguntas patient_only (ex: "medicações do P0042")
+  que em 0.50 traziam 3 chunks aleatórios de cardio/infecto/gineco
+  agora trazem 0 — correto, a resposta vem do banco de pacientes, não
+  dos protocolos.
+
+**Limitações honestas:**
+1. **Calibração com dataset pequeno** (35 protocolos sintéticos). Em
+   produção com base maior, redistribuição de scores pode mudar; recalibrar.
+2. **Falso positivo persistente** em condições com sobreposição
+   semântica legítima — ex: "Doença de Chagas em fase crônica" passa
+   em qualquer threshold ≤ 0.60 porque mapeia pra DII (megacólon é
+   manifestação de Chagas). Nenhum threshold absoluto resolve isso;
+   abordagem futura: filtro lexical complementar ou re-ranking.
+3. **Instabilidade em formulações com qualificadores temporais**
+   ("agudo", "crônico") — o embedding multilíngue MiniLM-L12 é
+   sensível a isso. "Conduta em AVC isquêmico agudo" caiu em 0.495
+   mesmo sendo match exato de tema. Em produção, vale considerar
+   normalização ou expansão de query.
+4. **Trocar embedding model exige recalibração completa.** Os números
+   acima são específicos do `paraphrase-multilingual-MiniLM-L12-v2`.
+
+**Como reproduzir:**
+
+```bash
+cd medical-assistant
+uv run python evaluation/calibrate_rag_threshold.py
+```
+
+Script é determinístico — scores devem reproduzir dentro de ~0.001 de
+diferença entre execuções.
+
+
