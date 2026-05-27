@@ -16,7 +16,7 @@ flowchart TB
     DEMO --> ROUTER{Router<br/>regex + heurísticas<br/>assistant/router.py}
 
     ROUTER -->|sempre| RAG[ProtocolRetriever<br/>Chroma + sentence-transformers<br/>assistant/rag/retriever.py]
-    ROUTER -->|se ID detectado<br/>regex \bP\\d{4}\b| TOOL[get_patient_by_id<br/>SQLite<br/>assistant/tools/patient_records.py]
+    ROUTER -->|se ID detectado<br/>padrão P + 4 dígitos| TOOL[get_patient_by_id<br/>SQLite<br/>assistant/tools/patient_records.py]
 
     RAG -->|top_k=3 chunks<br/>+ metadata| PROMPT
     TOOL -->|PatientRecord<br/>ou None| PROMPT
@@ -49,7 +49,7 @@ flowchart TB
 | **Embedding multilíngue leve** | `paraphrase-multilingual-MiniLM-L12-v2` cobre PT-BR, ~120MB, roda rápido no M1 | `assistant/rag/build_index.py` |
 | **Chunking ~400 tokens header-first** | Captura "uma seção típica" de protocolo; overlap 80 evita perder frases na borda | `RecursiveCharacterTextSplitter.from_tiktoken_encoder` |
 | **Sem threshold rígido** | Sempre devolve top_k=3; prompt instrui o LLM a usar contexto SE relevante. Evita "cegar" o modelo em perguntas ambíguas | `ProtocolRetriever.retrieve` |
-| **Fontes anexadas programaticamente (Estratégia B)** | Modelo pequeno alucina nomes de arquivos; metadados do Chroma são fonte da verdade | `chain.py` retorna `sources: list[dict]` |
+| **Fontes anexadas programaticamente (Estratégia B)** | Modelo pequeno alucina nomes de arquivos; metadados do Chroma são fonte da verdade | `chain.py` retorna `sources: list[dict` |
 | **SQLite, não Postgres** | Volume pequeno (50 pacientes), sem dependência de servidor, perfeito pro caso acadêmico | `assistant/tools/patient_records.py` |
 | **LangChain LCEL com RunnableLambda** | LCEL puro fica ilegível com 3 fontes de contexto; `RunnableLambda` mantém composição sem boilerplate | `assistant/chain.py:build_medical_chain` |
 
