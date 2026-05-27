@@ -11,14 +11,22 @@ Smoke test (linha de comando):
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import chromadb
-from chromadb.config import Settings
-from chromadb.utils import embedding_functions
+# ChromaDB 0.5.x tenta enviar telemetria via posthog, e a versão de posthog
+# instalada quebra com `capture() takes 1 positional argument but 3 were given`.
+# `anonymized_telemetry=False` nas Settings não silencia (bug do chromadb).
+# Aqui forçamos: env var + nível CRITICAL no logger que emite o warning.
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
+
+import chromadb  # noqa: E402
+from chromadb.config import Settings  # noqa: E402
+from chromadb.utils import embedding_functions  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

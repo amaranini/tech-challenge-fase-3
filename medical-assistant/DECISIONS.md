@@ -711,4 +711,122 @@ uv run python evaluation/calibrate_rag_threshold.py
 Script é determinístico — scores devem reproduzir dentro de ~0.001 de
 diferença entre execuções.
 
+---
+
+## 18. LangGraph com `TypedDict` + reducers acumulativos
+
+**Decisão**: o estado compartilhado do grafo (`MedicalState`) é um
+`TypedDict` (não Pydantic `BaseModel`), e os campos acumulativos usam
+`Annotated[list, operator.add]`.
+
+**Por quê**:
+- LangGraph trata `TypedDict` como first-class — gera schema automático
+  pro grafo sem overhead de validação de Pydantic em cada transição.
+- O default do LangGraph é **substituir** uma chave quando um nó a
+  retorna. Para `node_trace` (cada nó adiciona 1 entrada),
+  `errors` (vários nós podem registrar), `guardrail_flags` e
+  `alerts_emitted`, queremos **concatenar**. `Annotated[list, operator.add]`
+  diz isso ao LangGraph.
+- Tem que importar de `typing_extensions.TypedDict` em Python <3.12
+  (não de `typing.TypedDict`): Pydantic v2 (chamado internamente pelo
+  LangGraph pra gerar o schema) só aceita `typing_extensions` em <3.12.
+  Erro críptico se errar essa.
+
+**Trade-off aceito**: sem validação automática dos tipos em runtime — se
+um nó devolver `intent="xyz"` em vez de um dos 3 valores válidos, o
+grafo aceita silenciosamente. Mitigado por: parsing tolerante + fallback
+seguro em cada nó (ver decisão 20).
+
+**Onde**: `assistant/graph_state.py`.
+
+---
+
+## 19. Híbrido determinístico/LLM nos classificadores (Nós 1 e 2)
+
+**Decisão**: o **Nó 1 (`classify_intent`)** é determinístico via keyword
+matching. O **Nó 2 (`triage_urgency`)** usa o `MedicalLLM` com few-shot.
+
+**Por quê — Nó 1 determinístico**:
+- O `MedicalLLM` (Qwen 1.5B + LoRA fine-tuned em diálogos clínicos) tem
+  viés forte para classificar **qualquer** pergunta como `clinica`,
+  mesmo com few-shot reforçado. Validado empiricamente em
+  `assistant/test_classifier_prompts.py`:
+  - **v1 do prompt (3 exemplos)**: 3/5 acertos
+  - **v2 do prompt (5 exemplos + regra explícita)**: 3/5 acertos
+    (e em 1 caso o modelo cuspiu `forneca_clima` — alucinou formato)
+- Trocar pra Qwen base (sem LoRA) carregaria 2 modelos em RAM (~13 GB
+  no M1 16 GB → risco de swap).
+- Roteador determinístico é coerente com a filosofia já estabelecida na
+  Fase 4 (`assistant/router.py`): "não confiar tool-calling no 1.5B".
+
+**Por quê — Nó 2 com LLM**:
+- Avaliar urgência exige nuance semântica que keyword matching captura
+  mal (ex: "diabético com glicemia 280 sem cetose" = media, não alta).
+- Validação empírica: 5/5 acertos no `test_classifier_prompts.py`,
+  inclusive em casos borderline (recém-nascido com cianose = alta;
+  tosse 2 semanas hígido = baixa).
+- Output curto (1 palavra) reduz custo de geração (~0.45 s/chamada).
+- Parsing tolerante via regex + fallback seguro = "media" mitiga falhas.
+
+**Bônus auditoria**: o Nó 1 retorna a keyword que disparou o match
+(`kw='asmática'`, `kw='que horas'`), aparecendo no `node_trace`. Pro
+vídeo isso é didático.
+
+**Onde**: `assistant/intent_classifier.py` (regras), `assistant/graph_nodes.py:classify_intent` e `make_triage_urgency_node`.
+
+---
+
+## 20. Nós defensivos (try/except + fallback) — grafo nunca crasha
+
+**Decisão**: TODO nó do grafo é envolvido em `try/except Exception`. Em
+caso de falha, o nó:
+1. Loga a exceção (`logger.exception`)
+2. Registra mensagem curta em `state.errors`
+3. Devolve um valor de fallback seguro (`urgency="media"`,
+   `patient_data=None`, `final_response="(sem resposta gerada)"`)
+4. Adiciona entrada no `node_trace` com o erro
+
+**Por quê**:
+- Demo do vídeo precisa funcionar. Se o modelo MLX der OOM no meio de
+  uma execução, o usuário tem que ver pelo menos UMA resposta —
+  idealmente o fallback explicando que algo deu errado.
+- Erros não-fatais (paciente não encontrado, RAG retornou vazio, parse
+  falhou) são **estados esperados**, não exceções. O eval suite
+  documenta isso: o caso 10 (P9999 inexistente) PRECISA passar pelo
+  grafo todo.
+- Auditabilidade: o `state.errors` é a fonte de verdade para "o que
+  silenciosamente falhou". Aparece em `/trace` no demo.
+
+**Trade-off aceito**: bugs reais podem ficar escondidos por meses. Mitigado
+por: (a) logs estruturados em `logging_/graph_traces.jsonl`,
+(b) `pytest` cobre as exceções esperadas, (c) `/state` no demo expõe
+`errors` se houver.
+
+**Onde**: padrão em `assistant/graph_nodes.py`.
+
+---
+
+## 21. Alertas em arquivo local (não notificação externa)
+
+**Decisão**: alertas de urgência alta gravam UMA linha JSON em
+`logging_/alerts.jsonl` + 1 `print` no console (`⚠️  ALERTA EMITIDO`).
+Não chamamos nenhuma API externa.
+
+**Por quê**:
+- Fase 5 é sobre orquestração, não integração. Plugar Slack/Twilio/email
+  agora é over-engineering.
+- O schema do alerta já está documentado e estável
+  (`AlertEntry` em `graph_state.py`). Fase 7 (API) pode plugar
+  destinos reais sem mexer no Nó 8.
+- O `print` deliberadamente visível no console é o sinal demo-friendly:
+  no vídeo aparece um aviso amarelo no terminal junto com a resposta,
+  ilustrando "o grafo decidiu emitir alerta".
+
+**Como simular múltiplos destinos no futuro**: o Nó 8 (`emit_alert_if_needed`)
+seria estendido para chamar um `AlertSink` injetado via DI — `JsonlSink`
+(o atual), `SlackSink`, etc. Por enquanto, sink único hardcoded.
+
+**Onde**: `assistant/graph_nodes.py:emit_alert_if_needed`, log em
+`logging_/alerts.jsonl`.
+
 

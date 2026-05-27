@@ -1,0 +1,103 @@
+{
+  "case": {
+    "n": 7,
+    "title": "Só protocolo (sem paciente)",
+    "question": "Como prevenir TEV em paciente acamado?",
+    "patient_id": null
+  },
+  "passed": true,
+  "n_passed": 2,
+  "n_total": 2,
+  "latency_s": 2.22,
+  "checks": [
+    {
+      "ok": true,
+      "msg": "intent='clinica'"
+    },
+    {
+      "ok": true,
+      "msg": "patient_data='falsy'"
+    }
+  ],
+  "state": {
+    "question": "Como prevenir TEV em paciente acamado?",
+    "patient_id": null,
+    "intent": "clinica",
+    "urgency": "baixa",
+    "patient_data": null,
+    "pending_exams": null,
+    "rag_has_sources": false,
+    "rag_chunks_preview": [],
+    "draft_response": "Para prevenir TEV em pacientes acamados, é importante manter a temperatura corporal em 36,5°C ou mais baixa, evitar a exposição a fumaças e gases nocivos, e monitorar a pressão arterial regularmente.",
+    "guardrail_flags": [],
+    "was_rewritten": false,
+    "final_response": "Para prevenir TEV em pacientes acamados, é importante manter a temperatura corporal em 36,5°C ou mais baixa, evitar a exposição a fumaças e gases nocivos, e monitorar a pressão arterial regularmente.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "alerts_emitted": [],
+    "errors": [],
+    "node_trace": [
+      {
+        "node": "classify_intent",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.0,
+        "summary": "clinica (kw='paciente')",
+        "error": null
+      },
+      {
+        "node": "triage_urgency",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.4516,
+        "summary": "raw='baixa' → baixa",
+        "error": null
+      },
+      {
+        "node": "fetch_patient_data",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.0,
+        "summary": "skip (sem patient_id)",
+        "error": null
+      },
+      {
+        "node": "check_pending_exams",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.0,
+        "summary": "skip (sem patient_id)",
+        "error": null
+      },
+      {
+        "node": "retrieve_protocol",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.0168,
+        "summary": "0 chunk(s), scores=[]",
+        "error": null
+      },
+      {
+        "node": "generate_response",
+        "timestamp": "2026-05-27T09:21:02",
+        "latency_s": 1.7492,
+        "summary": "199 chars: 'Para prevenir TEV em pacientes acamados, é importante manter a temperatura corpo'",
+        "error": null
+      },
+      {
+        "node": "guardrail_check",
+        "timestamp": "2026-05-27T09:21:02",
+        "latency_s": 0.0001,
+        "summary": "sem flags",
+        "error": null
+      },
+      {
+        "node": "emit_alert_if_needed",
+        "timestamp": "2026-05-27T09:21:02",
+        "latency_s": 0.0,
+        "summary": "no-op (urgency=baixa)",
+        "error": null
+      },
+      {
+        "node": "finalize_response",
+        "timestamp": "2026-05-27T09:21:02",
+        "latency_s": 0.0,
+        "summary": "final=280 chars",
+        "error": null
+      }
+    ]
+  }
+}

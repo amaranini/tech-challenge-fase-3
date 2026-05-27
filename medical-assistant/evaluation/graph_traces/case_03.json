@@ -1,0 +1,141 @@
+{
+  "case": {
+    "n": 3,
+    "title": "Urgência alta — sepse com PA baixa",
+    "question": "Paciente em sepse grave com PA 70x40, conduta imediata?",
+    "patient_id": "P0001"
+  },
+  "passed": true,
+  "n_passed": 4,
+  "n_total": 4,
+  "latency_s": 7.34,
+  "checks": [
+    {
+      "ok": true,
+      "msg": "intent='clinica'"
+    },
+    {
+      "ok": true,
+      "msg": "urgency='alta'"
+    },
+    {
+      "ok": true,
+      "msg": "trace tem 'emit_alert_if_needed'"
+    },
+    {
+      "ok": true,
+      "msg": "alerts_emitted=1"
+    }
+  ],
+  "state": {
+    "question": "Paciente em sepse grave com PA 70x40, conduta imediata?",
+    "patient_id": "P0001",
+    "intent": "clinica",
+    "urgency": "alta",
+    "patient_data": {
+      "id": "P0001",
+      "nome": "Sr. Apollo Sousa",
+      "idade": 5,
+      "sexo": "M",
+      "alergias": "Nenhuma",
+      "medicacoes_atuais": "soro fisiológico, paracetamol",
+      "historico_resumido": "Paciente masculino de 5 anos com histórico de asma leve, episódios esporádicos de bronquite. Recebe acompanhamento pediátrico regular.",
+      "exames_pendentes": []
+    },
+    "pending_exams": [
+      {
+        "tipo_exame": "Hemograma completo",
+        "data_solicitacao": "2026-05-04",
+        "prioridade": "rotina"
+      }
+    ],
+    "rag_has_sources": true,
+    "rag_chunks_preview": [
+      {
+        "source_file": "protocol_029_ginecologia_e_obstetrícia.md",
+        "section": "Critérios de Inclusão/Exclusão",
+        "specialty": "ginecologia e obstetrícia",
+        "score": 0.5561
+      }
+    ],
+    "draft_response": "Paciente em sepse grave com PA 70x40, conduta imediata?",
+    "guardrail_flags": [],
+    "was_rewritten": false,
+    "final_response": "Paciente em sepse grave com PA 70x40, conduta imediata?\n\n**Fontes consultadas:**\n- protocol_029_ginecologia_e_obstetrícia.md · _Critérios de Inclusão/Exclusão_ (score 0.5561)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*\n\n🚨 **Alerta de urgência alta foi notificado à equipe.**",
+    "alerts_emitted": [
+      {
+        "timestamp": "2026-05-27T09:20:54",
+        "patient_id": "P0001",
+        "question": "Paciente em sepse grave com PA 70x40, conduta imediata?",
+        "urgency": "alta",
+        "summary": "Paciente em sepse grave com PA 70x40, conduta imediata?"
+      }
+    ],
+    "errors": [],
+    "node_trace": [
+      {
+        "node": "classify_intent",
+        "timestamp": "2026-05-27T09:20:46",
+        "latency_s": 0.0,
+        "summary": "clinica (kw='paciente')",
+        "error": null
+      },
+      {
+        "node": "triage_urgency",
+        "timestamp": "2026-05-27T09:20:49",
+        "latency_s": 2.5201,
+        "summary": "raw='alta' → alta",
+        "error": null
+      },
+      {
+        "node": "fetch_patient_data",
+        "timestamp": "2026-05-27T09:20:49",
+        "latency_s": 0.0009,
+        "summary": "P0001 (argumento) → Sr. Apollo Sousa, 5a",
+        "error": null
+      },
+      {
+        "node": "check_pending_exams",
+        "timestamp": "2026-05-27T09:20:49",
+        "latency_s": 0.0003,
+        "summary": "P0001 → 1 exame(s) pendente(s)",
+        "error": null
+      },
+      {
+        "node": "retrieve_protocol",
+        "timestamp": "2026-05-27T09:20:49",
+        "latency_s": 0.0462,
+        "summary": "1 chunk(s), scores=[0.56]",
+        "error": null
+      },
+      {
+        "node": "generate_response",
+        "timestamp": "2026-05-27T09:20:54",
+        "latency_s": 4.768,
+        "summary": "55 chars: 'Paciente em sepse grave com PA 70x40, conduta imediata?'",
+        "error": null
+      },
+      {
+        "node": "guardrail_check",
+        "timestamp": "2026-05-27T09:20:54",
+        "latency_s": 0.0001,
+        "summary": "sem flags",
+        "error": null
+      },
+      {
+        "node": "emit_alert_if_needed",
+        "timestamp": "2026-05-27T09:20:54",
+        "latency_s": 0.0013,
+        "summary": "ALERTA emitido pid=P0001",
+        "error": null
+      },
+      {
+        "node": "finalize_response",
+        "timestamp": "2026-05-27T09:20:54",
+        "latency_s": 0.0,
+        "summary": "final=311 chars",
+        "error": null
+      }
+    ]
+  }
+}

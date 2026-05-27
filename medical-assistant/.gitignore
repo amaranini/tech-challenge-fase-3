@@ -71,6 +71,9 @@ finetuning/output/adapters/*
 # ---- Logs de auditoria ----
 logging_/logs/*
 !logging_/logs/.gitkeep
+# Logs estruturados gerados em runtime pelo grafo (Fase 5).
+# Schema documentado em assistant/graph_state.py (AlertEntry, NodeTraceEntry).
+logging_/*.jsonl
 
 # ---- IDE / Editores ----
 .vscode/

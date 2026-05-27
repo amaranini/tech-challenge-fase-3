@@ -95,6 +95,55 @@ def get_patient_by_id(patient_id: str, db_path: Path | str = DB_PATH) -> Patient
     return rec
 
 
+def get_pending_exams(patient_id: str, db_path: Path | str = DB_PATH) -> list[dict]:
+    """Lista exames pendentes do paciente na tabela `exames_pendentes` (Fase 5).
+
+    Retorna [] em qualquer cenário de "sem exames":
+    - paciente não tem nenhum exame pendente
+    - paciente não existe (sem levantar exceção — comportamento gracioso)
+
+    Levanta `FileNotFoundError` apenas se o banco não foi construído ainda.
+
+    Estrutura de cada item:
+        {"tipo_exame": str, "data_solicitacao": str (ISO), "prioridade": str}
+
+    Ordenação: prioridade DESC (imediato > urgente > rotina), depois
+    data_solicitacao DESC (mais recente primeiro).
+    """
+    db_path = Path(db_path)
+    if not db_path.exists():
+        raise FileNotFoundError(
+            f"Banco de pacientes não encontrado em '{db_path}'.\n"
+            f"Construa antes: uv run python assistant/tools/build_patient_db.py"
+        )
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT tipo_exame, data_solicitacao, prioridade "
+            "FROM exames_pendentes "
+            "WHERE patient_id = ? "
+            "ORDER BY CASE prioridade "
+            "  WHEN 'imediato' THEN 0 "
+            "  WHEN 'urgente'  THEN 1 "
+            "  WHEN 'rotina'   THEN 2 "
+            "END ASC, data_solicitacao DESC",
+            (patient_id,),
+        ).fetchall()
+    except sqlite3.OperationalError as e:
+        # Tabela ausente: DB construído em versão pré-Fase 5.
+        conn.close()
+        logger.warning("get_pending_exams: tabela exames_pendentes ausente (%s)", e)
+        return []
+    finally:
+        conn.close()
+
+    exams = [dict(r) for r in rows]
+    logger.info("get_pending_exams(%r) → %d exame(s)", patient_id, len(exams))
+    return exams
+
+
 def _cli(patient_id: str) -> int:
     """Smoke test: imprime o prontuário ou mensagem de não-encontrado."""
     try:
@@ -111,7 +160,15 @@ def _cli(patient_id: str) -> int:
     print(f"  Medicações em uso: {rec.medicacoes_atuais}")
     print(f"  Histórico:")
     print(f"    {rec.historico_resumido}")
-    print(f"  Exames pendentes: {rec.exames_pendentes}")
+    print(f"  Exames pendentes (legado JSON): {rec.exames_pendentes}")
+    print()
+    print(f"  Exames pendentes (tabela exames_pendentes, Fase 5):")
+    exams = get_pending_exams(patient_id)
+    if not exams:
+        print("    (nenhum)")
+    for e in exams:
+        print(f"    - [{e['prioridade']:<8s}] {e['tipo_exame']} "
+              f"(solicitado em {e['data_solicitacao']})")
     return 0
 
 

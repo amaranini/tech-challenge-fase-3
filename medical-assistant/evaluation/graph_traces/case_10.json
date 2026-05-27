@@ -1,0 +1,120 @@
+{
+  "case": {
+    "n": 10,
+    "title": "Paciente inexistente (P9999)",
+    "question": "Qual a conduta para o paciente P9999?",
+    "patient_id": null
+  },
+  "passed": true,
+  "n_passed": 4,
+  "n_total": 4,
+  "latency_s": 9.75,
+  "checks": [
+    {
+      "ok": true,
+      "msg": "patient_id='P9999'"
+    },
+    {
+      "ok": true,
+      "msg": "patient_data='falsy'"
+    },
+    {
+      "ok": true,
+      "msg": "errors=1"
+    },
+    {
+      "ok": true,
+      "msg": "trace tem 'finalize_response'"
+    }
+  ],
+  "state": {
+    "question": "Qual a conduta para o paciente P9999?",
+    "patient_id": "P9999",
+    "intent": "clinica",
+    "urgency": "baixa",
+    "patient_data": null,
+    "pending_exams": [],
+    "rag_has_sources": true,
+    "rag_chunks_preview": [
+      {
+        "source_file": "protocol_023_gastroenterologia.md",
+        "section": "Critérios de alta/encaminhamento",
+        "specialty": "gastroenterologia",
+        "score": 0.5767
+      }
+    ],
+    "draft_response": "### CONTEXTO RECUPERADO DOS PROTOCOLOS INSTITUCIONAIS ###\n\n[Trecho 2] Fonte: protocol_023_gastroenterologia.md • Seção: Critérios de alta/encaminhamento\n## Critérios de alta/encaminhamento\n\n- O paciente pode ser considerado para alta quando:\n  - Apresentar remissão clínica e laboratorial da DII por pelo menos 3 meses.\n  - Estar em condições de seguir o tratamento ambulatorial.\n  - Ter recebido orientações sobre o manejo da doença e sinais de alerta para recaídas.\n- Encaminhamento para especialista deve ser considerado se:\n  - O paciente não responder ao tratamento após 6 meses.\n  - Houver complicações que necessitem de manejo cirúrgico.\n  - O paciente apresentar necessidade de suporte adicional que não possa ser fornecido no ambulatório.\n\n### PERGUNTA DO PROFISSIONAL ###\nQual a conduta para o paciente P9999?\n\n### RESPOSTA ###\n- O paciente P9999 pode ser considerado para alta quando:\n  - Apresentar remissão clínica e laboratorial da DII por pelo menos 3 meses.\n  - Estar em condições de seguir o tratamento ambulatorial.\n  - Ter recebido orientações sobre o manejo da doença e sinais de alerta para recaídas.\n- Encaminhamento para especialista deve ser considerado se:\n  - O paciente não responder ao tratamento após 6 meses.\n  - Houver complicações que necessitem de manejo cirúrgico.\n  - O paciente apresentar necessidade de suporte adicional que não possa ser fornecido no ambulatório.",
+    "guardrail_flags": [],
+    "was_rewritten": false,
+    "final_response": "### CONTEXTO RECUPERADO DOS PROTOCOLOS INSTITUCIONAIS ###\n\n[Trecho 2] Fonte: protocol_023_gastroenterologia.md • Seção: Critérios de alta/encaminhamento\n## Critérios de alta/encaminhamento\n\n- O paciente pode ser considerado para alta quando:\n  - Apresentar remissão clínica e laboratorial da DII por pelo menos 3 meses.\n  - Estar em condições de seguir o tratamento ambulatorial.\n  - Ter recebido orientações sobre o manejo da doença e sinais de alerta para recaídas.\n- Encaminhamento para especialista deve ser considerado se:\n  - O paciente não responder ao tratamento após 6 meses.\n  - Houver complicações que necessitem de manejo cirúrgico.\n  - O paciente apresentar necessidade de suporte adicional que não possa ser fornecido no ambulatório.\n\n### PERGUNTA DO PROFISSIONAL ###\nQual a conduta para o paciente P9999?\n\n### RESPOSTA ###\n- O paciente P9999 pode ser considerado para alta quando:\n  - Apresentar remissão clínica e laboratorial da DII por pelo menos 3 meses.\n  - Estar em condições de seguir o tratamento ambulatorial.\n  - Ter recebido orientações sobre o manejo da doença e sinais de alerta para recaídas.\n- Encaminhamento para especialista deve ser considerado se:\n  - O paciente não responder ao tratamento após 6 meses.\n  - Houver complicações que necessitem de manejo cirúrgico.\n  - O paciente apresentar necessidade de suporte adicional que não possa ser fornecido no ambulatório.\n\n**Fontes consultadas:**\n- protocol_023_gastroenterologia.md · _Critérios de alta/encaminhamento_ (score 0.5767)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "alerts_emitted": [],
+    "errors": [
+      "fetch_patient_data: paciente P9999 não encontrado"
+    ],
+    "node_trace": [
+      {
+        "node": "classify_intent",
+        "timestamp": "2026-05-27T09:21:11",
+        "latency_s": 0.0,
+        "summary": "clinica (kw='paciente')",
+        "error": null
+      },
+      {
+        "node": "triage_urgency",
+        "timestamp": "2026-05-27T09:21:12",
+        "latency_s": 0.452,
+        "summary": "raw='baixa' → baixa",
+        "error": null
+      },
+      {
+        "node": "fetch_patient_data",
+        "timestamp": "2026-05-27T09:21:12",
+        "latency_s": 0.0005,
+        "summary": "P9999 (regex) → NÃO ENCONTRADO",
+        "error": "patient_not_found:P9999"
+      },
+      {
+        "node": "check_pending_exams",
+        "timestamp": "2026-05-27T09:21:12",
+        "latency_s": 0.0002,
+        "summary": "P9999 → 0 exame(s) pendente(s)",
+        "error": null
+      },
+      {
+        "node": "retrieve_protocol",
+        "timestamp": "2026-05-27T09:21:12",
+        "latency_s": 0.0174,
+        "summary": "1 chunk(s), scores=[0.58]",
+        "error": null
+      },
+      {
+        "node": "generate_response",
+        "timestamp": "2026-05-27T09:21:21",
+        "latency_s": 9.2769,
+        "summary": "1401 chars: '### CONTEXTO RECUPERADO DOS PROTOCOLOS INSTITUCIONAIS ###  [Trecho 2] Fonte: pro'",
+        "error": null
+      },
+      {
+        "node": "guardrail_check",
+        "timestamp": "2026-05-27T09:21:21",
+        "latency_s": 0.0012,
+        "summary": "sem flags",
+        "error": null
+      },
+      {
+        "node": "emit_alert_if_needed",
+        "timestamp": "2026-05-27T09:21:21",
+        "latency_s": 0.0,
+        "summary": "no-op (urgency=baixa)",
+        "error": null
+      },
+      {
+        "node": "finalize_response",
+        "timestamp": "2026-05-27T09:21:21",
+        "latency_s": 0.0,
+        "summary": "final=1595 chars",
+        "error": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "case": {
+    "n": 5,
+    "title": "Paciente + protocolo (asma)",
+    "question": "Qual o protocolo para crise asmática?",
+    "patient_id": "P0002"
+  },
+  "passed": true,
+  "n_passed": 4,
+  "n_total": 4,
+  "latency_s": 2.86,
+  "checks": [
+    {
+      "ok": true,
+      "msg": "intent='clinica'"
+    },
+    {
+      "ok": true,
+      "msg": "patient_data='truthy'"
+    },
+    {
+      "ok": true,
+      "msg": "rag_has_sources=True"
+    },
+    {
+      "ok": true,
+      "msg": "trace tem 'retrieve_protocol'"
+    }
+  ],
+  "state": {
+    "question": "Qual o protocolo para crise asmática?",
+    "patient_id": "P0002",
+    "intent": "clinica",
+    "urgency": "baixa",
+    "patient_data": {
+      "id": "P0002",
+      "nome": "Maria Flor Barros",
+      "idade": 33,
+      "sexo": "F",
+      "alergias": "lactose, penicilina",
+      "medicacoes_atuais": "anticoncepcional, omeprazol",
+      "historico_resumido": "Paciente feminino de 33 anos com história de gastrite e distúrbios menstruais. Realiza acompanhamento ginecológico e gastroenterológico.",
+      "exames_pendentes": []
+    },
+    "pending_exams": [],
+    "rag_has_sources": true,
+    "rag_chunks_preview": [
+      {
+        "source_file": "protocol_033_pediatria.md",
+        "section": "Indicação",
+        "specialty": "pediatria",
+        "score": 0.8201
+      },
+      {
+        "source_file": "protocol_001_pneumologia.md",
+        "section": "Indicação",
+        "specialty": "pneumologia",
+        "score": 0.8198
+      },
+      {
+        "source_file": "protocol_031_pneumologia.md",
+        "section": "Indicação",
+        "specialty": "pneumologia",
+        "score": 0.8173
+      }
+    ],
+    "draft_response": "O protocolo para crise asmática é o protocolo_013_crisa_asma.md, que destina-se a orientar a prática clínica na avaliação, tratamento e acompanhamento de pacientes asmáticos em crise, visando a melhoria da qualidade de vida e controle da doença.",
+    "guardrail_flags": [],
+    "was_rewritten": false,
+    "final_response": "O protocolo para crise asmática é o protocolo_013_crisa_asma.md, que destina-se a orientar a prática clínica na avaliação, tratamento e acompanhamento de pacientes asmáticos em crise, visando a melhoria da qualidade de vida e controle da doença.\n\n**Fontes consultadas:**\n- protocol_033_pediatria.md · _Indicação_ (score 0.8201)\n- protocol_001_pneumologia.md · _Indicação_ (score 0.8198)\n- protocol_031_pneumologia.md · _Indicação_ (score 0.8173)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "alerts_emitted": [],
+    "errors": [],
+    "node_trace": [
+      {
+        "node": "classify_intent",
+        "timestamp": "2026-05-27T09:20:55",
+        "latency_s": 0.0,
+        "summary": "clinica (kw='asmática')",
+        "error": null
+      },
+      {
+        "node": "triage_urgency",
+        "timestamp": "2026-05-27T09:20:56",
+        "latency_s": 0.465,
+        "summary": "raw='baixa' → baixa",
+        "error": null
+      },
+      {
+        "node": "fetch_patient_data",
+        "timestamp": "2026-05-27T09:20:56",
+        "latency_s": 0.0018,
+        "summary": "P0002 (argumento) → Maria Flor Barros, 33a",
+        "error": null
+      },
+      {
+        "node": "check_pending_exams",
+        "timestamp": "2026-05-27T09:20:56",
+        "latency_s": 0.0002,
+        "summary": "P0002 → 0 exame(s) pendente(s)",
+        "error": null
+      },
+      {
+        "node": "retrieve_protocol",
+        "timestamp": "2026-05-27T09:20:56",
+        "latency_s": 0.0175,
+        "summary": "3 chunk(s), scores=[0.82, 0.82, 0.82]",
+        "error": null
+      },
+      {
+        "node": "generate_response",
+        "timestamp": "2026-05-27T09:20:58",
+        "latency_s": 2.369,
+        "summary": "245 chars: 'O protocolo para crise asmática é o protocolo_013_crisa_asma.md, que destina-se '",
+        "error": null
+      },
+      {
+        "node": "guardrail_check",
+        "timestamp": "2026-05-27T09:20:58",
+        "latency_s": 0.0,
+        "summary": "sem flags",
+        "error": null
+      },
+      {
+        "node": "emit_alert_if_needed",
+        "timestamp": "2026-05-27T09:20:58",
+        "latency_s": 0.0,
+        "summary": "no-op (urgency=baixa)",
+        "error": null
+      },
+      {
+        "node": "finalize_response",
+        "timestamp": "2026-05-27T09:20:58",
+        "latency_s": 0.0,
+        "summary": "final=526 chars",
+        "error": null
+      }
+    ]
+  }
+}

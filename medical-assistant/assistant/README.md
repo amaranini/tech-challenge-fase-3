@@ -1,4 +1,4 @@
-# `assistant/` — wrapper LangChain + RAG + tool de prontuário
+# `assistant/` — wrapper LangChain + RAG + tool de prontuário + grafo LangGraph
 
 Esta pasta contém:
 
@@ -9,7 +9,11 @@ Esta pasta contém:
 - **Tool de prontuário** (Fase 4) — SQLite com os 50 pacientes
   sintéticos, função `get_patient_by_id`.
 - **Roteador determinístico + chain** (Fase 4) — regex decide o que
-  acionar; `build_medical_chain` orquestra tudo via LangChain.
+  acionar; `build_medical_chain` orquestra tudo via LangChain. (Mantida
+  como referência; o orquestrador oficial agora é o grafo.)
+- **Grafo LangGraph** (Fase 5) — 9 nós + refuse + rewrite, com estado
+  compartilhado, logging por nó e diagrama exportável. `run_medical_graph`
+  é a nova interface principal.
 
 ---
 
@@ -30,7 +34,16 @@ Esta pasta contém:
 | `test_router.py` | 8 unit do roteador |
 | `test_chain.py` | 6 integração com mocks |
 | `test_rag.py` | 4 do retriever (pulam se índice não existir) |
-| `demo_chat.py` | CLI rich com indicadores RAG/paciente, `/sources`, `/no-rag` |
+| `demo_chat.py` | CLI Fase 4 (chain) com `/sources`, `/no-rag` |
+| `graph_state.py` | **Fase 5**: `MedicalState` TypedDict + reducers acumulativos |
+| `graph_prompts.py` | **Fase 5**: prompts dos nós (triage, generate, rewrite, refuse) |
+| `intent_classifier.py` | **Fase 5**: classificador determinístico do Nó 1 (keyword) |
+| `graph_nodes.py` | **Fase 5**: 9 nós + refuse + rewrite, todos defensivos |
+| `graph.py` | **Fase 5**: `build_graph()`, `run_medical_graph()`, `export_diagram()` |
+| `demo_graph.py` | **Fase 5**: CLI do grafo com `/trace`, `/state`, `/alerts` |
+| `test_graph_nodes.py` | **Fase 5**: 42 unit tests do grafo (~1s) |
+| `test_graph_integration.py` | **Fase 5**: 3 end-to-end com modelo real (slow) |
+| `test_classifier_prompts.py` | **Fase 5**: validação manual dos prompts (não-pytest) |
 
 ---
 
@@ -116,7 +129,89 @@ uv run python -m assistant.tools.patient_records P0001    # encontra
 uv run python -m assistant.tools.patient_records P9999    # gracefully
 ```
 
-## Demo chat interativo (RAG + paciente)
+## Fluxo automatizado (LangGraph — Fase 5)
+
+A Fase 5 substitui o orquestrador da Fase 4 por um grafo de estado com
+9 nós + 2 auxiliares (refuse, rewrite). O grafo é a interface principal
+do assistente agora; a chain LangChain da Fase 4 continua existindo como
+referência.
+
+### Smoke test e diagrama
+
+```bash
+# Compila o grafo, exporta diagrama (Mermaid + PNG), e roda 1 query
+uv run python assistant/graph.py
+```
+
+Saídas:
+- `docs/langgraph_flow_auto.md` — Mermaid gerado pelo LangGraph
+- `docs/langgraph_flow.png` — PNG via mermaid.ink (requer rede)
+- `docs/langgraph_flow.md` — versão escrita à mão (mais legível)
+
+### Uso programático
+
+```python
+from assistant.graph import run_medical_graph
+
+state = run_medical_graph(
+    question="Paciente em sepse grave com PA 70x40, conduta?",
+    patient_id="P0001",
+)
+
+print(state["final_response"])
+print("Intent:", state["intent"])           # clinica
+print("Urgency:", state["urgency"])         # alta
+print("Trace:", len(state["node_trace"]))   # ~9
+print("Alertas emitidos:", state["alerts_emitted"])
+```
+
+### Demo interativo do grafo
+
+```bash
+uv run python assistant/demo_graph.py
+```
+
+A cada pergunta, cada nó aparece executando em tempo real:
+
+```
+🎯 classify_intent       clinica (kw='paciente')
+🚦 triage_urgency        raw='alta' → alta
+👤 fetch_patient_data    P0001 (argumento) → Apollo Sousa, 5a
+🧪 check_pending_exams   P0001 → 1 exame(s) pendente(s)
+📚 retrieve_protocol     3 chunk(s), scores=[0.82, 0.75, 0.62]
+💭 generate_response     264 chars: 'Resposta...'
+🛡️ guardrail_check        sem flags
+🚨 emit_alert_if_needed  ALERTA emitido pid=P0001
+✅ finalize_response      final=545 chars
+```
+
+Comandos:
+- `/trace` — tabela com nós executados na última pergunta
+- `/state` — JSON do estado completo
+- `/alerts` — alertas emitidos NESTA sessão
+- `/clear` — limpa a tela
+- `/exit` — sai
+
+### Avaliação automatizada
+
+```bash
+uv run python evaluation/eval_graph.py
+cat evaluation/graph_eval_results.md
+```
+
+> 10 casos cobrindo os principais ramos do grafo (fora de escopo,
+> urgência alta, paciente + protocolo, só protocolo, guardrail
+> dispara, paciente inexistente). Resultado atual: **10/10**.
+> Saídas detalhadas em `evaluation/graph_traces/case_NN.json`.
+
+### Logs estruturados
+
+- `logging_/alerts.jsonl` — 1 linha por alerta de urgência alta
+- `logging_/graph_traces.jsonl` — 1 linha por execução completa
+
+---
+
+## Demo chat (Fase 4, ainda funcional)
 
 ```bash
 uv run python assistant/demo_chat.py
@@ -158,10 +253,14 @@ cat evaluation/comparison_phase4.md
 ## Testes
 
 ```bash
-uv run pytest assistant/ -v -m "not slow"   # ~22 rápidos: <2s
-uv run pytest assistant/ -v -m slow         # 2 lentos: carrega modelo (~1 min)
+uv run pytest assistant/ -v -m "not slow"   # ~60 rápidos: ~2s
+uv run pytest assistant/ -v -m slow         # 5 lentos: carrega modelo (~1 min)
 uv run pytest assistant/ -v                 # todos
 ```
+
+> Fase 5 adicionou 42 unit tests em `test_graph_nodes.py` + 3 slow em
+> `test_graph_integration.py`. Veja a [arquitetura da Fase 5](../docs/arquitetura_fase5.md)
+> para o diagrama completo do grafo.
 
 > Os 4 testes do retriever (`test_rag.py`) pulam automaticamente se o
 > índice em `assistant/data/chroma_db/` não tiver sido construído.

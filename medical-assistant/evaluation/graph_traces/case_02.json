@@ -1,0 +1,65 @@
+{
+  "case": {
+    "n": 2,
+    "title": "Fora de escopo (esporte)",
+    "question": "Quem ganhou a copa do mundo de 2022?",
+    "patient_id": null
+  },
+  "passed": true,
+  "n_passed": 3,
+  "n_total": 3,
+  "latency_s": 0.0,
+  "checks": [
+    {
+      "ok": true,
+      "msg": "intent='fora_de_escopo'"
+    },
+    {
+      "ok": true,
+      "msg": "trace tem 'refuse_node'"
+    },
+    {
+      "ok": true,
+      "msg": "trace sem 'generate_response' ✓"
+    }
+  ],
+  "state": {
+    "question": "Quem ganhou a copa do mundo de 2022?",
+    "patient_id": null,
+    "intent": "fora_de_escopo",
+    "urgency": null,
+    "patient_data": null,
+    "pending_exams": null,
+    "rag_has_sources": false,
+    "rag_chunks_preview": [],
+    "draft_response": "Esta interface é restrita a profissionais de saúde e a perguntas relacionadas à prática clínica ou à administração hospitalar. Sua mensagem (\"Quem ganhou a copa do mundo de 2022?\") está fora do escopo desta ferramenta. Posso ajudar com protocolos institucionais, dúvidas sobre condutas, interpretação de exames ou consultas a prontuário de paciente.",
+    "guardrail_flags": [],
+    "was_rewritten": false,
+    "final_response": "Esta interface é restrita a profissionais de saúde e a perguntas relacionadas à prática clínica ou à administração hospitalar. Sua mensagem (\"Quem ganhou a copa do mundo de 2022?\") está fora do escopo desta ferramenta. Posso ajudar com protocolos institucionais, dúvidas sobre condutas, interpretação de exames ou consultas a prontuário de paciente.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "alerts_emitted": [],
+    "errors": [],
+    "node_trace": [
+      {
+        "node": "classify_intent",
+        "timestamp": "2026-05-27T09:20:46",
+        "latency_s": 0.0,
+        "summary": "fora_de_escopo (nenhuma kw casou)",
+        "error": null
+      },
+      {
+        "node": "refuse_node",
+        "timestamp": "2026-05-27T09:20:46",
+        "latency_s": 0.0,
+        "summary": "recusa gerada (template fixo)",
+        "error": null
+      },
+      {
+        "node": "finalize_response",
+        "timestamp": "2026-05-27T09:20:46",
+        "latency_s": 0.0,
+        "summary": "final=430 chars",
+        "error": null
+      }
+    ]
+  }
+}

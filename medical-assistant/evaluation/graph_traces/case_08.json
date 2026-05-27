@@ -1,0 +1,118 @@
+{
+  "case": {
+    "n": 8,
+    "title": "Paciente sem protocolo claramente relevante",
+    "question": "Paciente P0001 tem queixa nova de tontura ao acordar",
+    "patient_id": "P0001"
+  },
+  "passed": true,
+  "n_passed": 2,
+  "n_total": 2,
+  "latency_s": 3.73,
+  "checks": [
+    {
+      "ok": true,
+      "msg": "patient_data='truthy'"
+    },
+    {
+      "ok": true,
+      "msg": "trace tem 'retrieve_protocol'"
+    }
+  ],
+  "state": {
+    "question": "Paciente P0001 tem queixa nova de tontura ao acordar",
+    "patient_id": "P0001",
+    "intent": "clinica",
+    "urgency": "baixa",
+    "patient_data": {
+      "id": "P0001",
+      "nome": "Sr. Apollo Sousa",
+      "idade": 5,
+      "sexo": "M",
+      "alergias": "Nenhuma",
+      "medicacoes_atuais": "soro fisiológico, paracetamol",
+      "historico_resumido": "Paciente masculino de 5 anos com histórico de asma leve, episódios esporádicos de bronquite. Recebe acompanhamento pediátrico regular.",
+      "exames_pendentes": []
+    },
+    "pending_exams": [
+      {
+        "tipo_exame": "Hemograma completo",
+        "data_solicitacao": "2026-05-04",
+        "prioridade": "rotina"
+      }
+    ],
+    "rag_has_sources": false,
+    "rag_chunks_preview": [],
+    "draft_response": "Paciente P0001, de 5 anos, apresenta sintomas de tontura ao acordar. A tontura pode ser resultado de problemas cardíacos, como arritmia ou hipertensão, ou de problemas cerebrais, como AVC. É importante realizar exames de imagem, como tomografia computadorizada (TC) e ecocardiograma, para avaliar o coração e a circulação sanguínea. A tontura pode ser uma manifestação de uma condição grave e requer acompanhamento médico regular.",
+    "guardrail_flags": [],
+    "was_rewritten": false,
+    "final_response": "Paciente P0001, de 5 anos, apresenta sintomas de tontura ao acordar. A tontura pode ser resultado de problemas cardíacos, como arritmia ou hipertensão, ou de problemas cerebrais, como AVC. É importante realizar exames de imagem, como tomografia computadorizada (TC) e ecocardiograma, para avaliar o coração e a circulação sanguínea. A tontura pode ser uma manifestação de uma condição grave e requer acompanhamento médico regular.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "alerts_emitted": [],
+    "errors": [],
+    "node_trace": [
+      {
+        "node": "classify_intent",
+        "timestamp": "2026-05-27T09:21:02",
+        "latency_s": 0.0,
+        "summary": "clinica (kw='paciente')",
+        "error": null
+      },
+      {
+        "node": "triage_urgency",
+        "timestamp": "2026-05-27T09:21:03",
+        "latency_s": 0.4777,
+        "summary": "raw='baixa' → baixa",
+        "error": null
+      },
+      {
+        "node": "fetch_patient_data",
+        "timestamp": "2026-05-27T09:21:03",
+        "latency_s": 0.0003,
+        "summary": "P0001 (argumento) → Sr. Apollo Sousa, 5a",
+        "error": null
+      },
+      {
+        "node": "check_pending_exams",
+        "timestamp": "2026-05-27T09:21:03",
+        "latency_s": 0.0001,
+        "summary": "P0001 → 1 exame(s) pendente(s)",
+        "error": null
+      },
+      {
+        "node": "retrieve_protocol",
+        "timestamp": "2026-05-27T09:21:03",
+        "latency_s": 0.0164,
+        "summary": "0 chunk(s), scores=[]",
+        "error": null
+      },
+      {
+        "node": "generate_response",
+        "timestamp": "2026-05-27T09:21:06",
+        "latency_s": 3.2277,
+        "summary": "430 chars: 'Paciente P0001, de 5 anos, apresenta sintomas de tontura ao acordar. A tontura p'",
+        "error": null
+      },
+      {
+        "node": "guardrail_check",
+        "timestamp": "2026-05-27T09:21:06",
+        "latency_s": 0.0,
+        "summary": "sem flags",
+        "error": null
+      },
+      {
+        "node": "emit_alert_if_needed",
+        "timestamp": "2026-05-27T09:21:06",
+        "latency_s": 0.0,
+        "summary": "no-op (urgency=baixa)",
+        "error": null
+      },
+      {
+        "node": "finalize_response",
+        "timestamp": "2026-05-27T09:21:06",
+        "latency_s": 0.0,
+        "summary": "final=511 chars",
+        "error": null
+      }
+    ]
+  }
+}

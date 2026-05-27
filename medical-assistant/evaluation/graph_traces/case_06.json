@@ -1,0 +1,142 @@
+{
+  "case": {
+    "n": 6,
+    "title": "ID extraído da pergunta (sem patient_id arg)",
+    "question": "Para o paciente P0003, conduta em hipertensão?",
+    "patient_id": null
+  },
+  "passed": true,
+  "n_passed": 2,
+  "n_total": 2,
+  "latency_s": 1.91,
+  "checks": [
+    {
+      "ok": true,
+      "msg": "patient_id='P0003'"
+    },
+    {
+      "ok": true,
+      "msg": "patient_data='truthy'"
+    }
+  ],
+  "state": {
+    "question": "Para o paciente P0003, conduta em hipertensão?",
+    "patient_id": "P0003",
+    "intent": "clinica",
+    "urgency": "baixa",
+    "patient_data": {
+      "id": "P0003",
+      "nome": "Murilo da Mata",
+      "idade": 19,
+      "sexo": "M",
+      "alergias": "Nenhuma",
+      "medicacoes_atuais": "ibuprofeno",
+      "historico_resumido": "Paciente masculino de 19 anos, estudante universitário, apresenta episódios de dor de cabeça frequentes e leve ansiedade. Sem histórico de doenças crônicas.",
+      "exames_pendentes": []
+    },
+    "pending_exams": [
+      {
+        "tipo_exame": "Ecocardiograma",
+        "data_solicitacao": "2026-05-04",
+        "prioridade": "urgente"
+      },
+      {
+        "tipo_exame": "Raio-X de tórax",
+        "data_solicitacao": "2026-05-09",
+        "prioridade": "rotina"
+      }
+    ],
+    "rag_has_sources": true,
+    "rag_chunks_preview": [
+      {
+        "source_file": "protocol_034_emergência.md",
+        "section": "Critérios de Alta/Encaminhamento",
+        "specialty": "emergência",
+        "score": 0.6827
+      },
+      {
+        "source_file": "protocol_019_emergência.md",
+        "section": "Critérios de alta/encaminhamento",
+        "specialty": "emergência",
+        "score": 0.6424
+      },
+      {
+        "source_file": "protocol_012_psiquiatria.md",
+        "section": "Critérios de alta/encaminhamento",
+        "specialty": "psiquiatria",
+        "score": 0.6269
+      }
+    ],
+    "draft_response": "Para o paciente P0003, conduta em hipertensão?",
+    "guardrail_flags": [],
+    "was_rewritten": false,
+    "final_response": "Para o paciente P0003, conduta em hipertensão?\n\n**Fontes consultadas:**\n- protocol_034_emergência.md · _Critérios de Alta/Encaminhamento_ (score 0.6827)\n- protocol_019_emergência.md · _Critérios de alta/encaminhamento_ (score 0.6424)\n- protocol_012_psiquiatria.md · _Critérios de alta/encaminhamento_ (score 0.6269)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "alerts_emitted": [],
+    "errors": [],
+    "node_trace": [
+      {
+        "node": "classify_intent",
+        "timestamp": "2026-05-27T09:20:58",
+        "latency_s": 0.0,
+        "summary": "clinica (kw='paciente')",
+        "error": null
+      },
+      {
+        "node": "triage_urgency",
+        "timestamp": "2026-05-27T09:20:59",
+        "latency_s": 0.4552,
+        "summary": "raw='baixa' → baixa",
+        "error": null
+      },
+      {
+        "node": "fetch_patient_data",
+        "timestamp": "2026-05-27T09:20:59",
+        "latency_s": 0.0003,
+        "summary": "P0003 (regex) → Murilo da Mata, 19a",
+        "error": null
+      },
+      {
+        "node": "check_pending_exams",
+        "timestamp": "2026-05-27T09:20:59",
+        "latency_s": 0.0002,
+        "summary": "P0003 → 2 exame(s) pendente(s)",
+        "error": null
+      },
+      {
+        "node": "retrieve_protocol",
+        "timestamp": "2026-05-27T09:20:59",
+        "latency_s": 0.0182,
+        "summary": "3 chunk(s), scores=[0.68, 0.64, 0.63]",
+        "error": null
+      },
+      {
+        "node": "generate_response",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 1.4274,
+        "summary": "46 chars: 'Para o paciente P0003, conduta em hipertensão?'",
+        "error": null
+      },
+      {
+        "node": "guardrail_check",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.0,
+        "summary": "sem flags",
+        "error": null
+      },
+      {
+        "node": "emit_alert_if_needed",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.0,
+        "summary": "no-op (urgency=baixa)",
+        "error": null
+      },
+      {
+        "node": "finalize_response",
+        "timestamp": "2026-05-27T09:21:00",
+        "latency_s": 0.0,
+        "summary": "final=396 chars",
+        "error": null
+      }
+    ]
+  }
+}
