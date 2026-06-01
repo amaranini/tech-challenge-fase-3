@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 2,
   "n_total": 2,
-  "latency_s": 1.72,
+  "latency_s": 1.45,
   "checks": [
     {
       "ok": true,
@@ -28,82 +28,89 @@
     "pending_exams": null,
     "rag_has_sources": false,
     "rag_chunks_preview": [],
-    "draft_response": "Paciente convulsionando há 5 minutos. Realizar manobra de CPR, manter a temperatura corporal e fornecer oxigênio.",
-    "guardrail_flags": [],
-    "was_rewritten": false,
-    "final_response": "Paciente convulsionando há 5 minutos. Realizar manobra de CPR, manter a temperatura corporal e fornecer oxigênio.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*\n\n🚨 **Alerta de urgência alta foi notificado à equipe.**",
+    "draft_response": "Paciente convulsionando há 5 minutos, o que fazer?",
+    "guardrail_flags": null,
+    "was_rewritten": null,
+    "final_response": "Paciente convulsionando há 5 minutos, o que fazer?\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*\n\n🚨 **Alerta de urgência alta foi notificado à equipe.**",
     "alerts_emitted": [
       {
-        "timestamp": "2026-05-27T09:20:55",
+        "timestamp": "2026-05-31T23:46:00",
         "patient_id": null,
         "question": "Paciente convulsionando há 5 minutos, o que fazer?",
         "urgency": "alta",
-        "summary": "Paciente convulsionando há 5 minutos. Realizar manobra de CPR, manter a temperatura corporal e fornecer oxigênio."
+        "summary": "Paciente convulsionando há 5 minutos, o que fazer?"
       }
     ],
     "errors": [],
     "node_trace": [
       {
+        "node": "input_guardrail_check",
+        "timestamp": "2026-05-31T23:45:59",
+        "latency_s": 0.0,
+        "summary": "nenhum disparo",
+        "error": null
+      },
+      {
         "node": "classify_intent",
-        "timestamp": "2026-05-27T09:20:54",
+        "timestamp": "2026-05-31T23:45:59",
         "latency_s": 0.0,
         "summary": "clinica (kw='paciente')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-27T09:20:54",
-        "latency_s": 0.4396,
+        "timestamp": "2026-05-31T23:45:59",
+        "latency_s": 0.4597,
         "summary": "raw='alta' → alta",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-27T09:20:54",
+        "timestamp": "2026-05-31T23:45:59",
         "latency_s": 0.0,
         "summary": "skip (sem patient_id)",
         "error": null
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-27T09:20:54",
+        "timestamp": "2026-05-31T23:45:59",
         "latency_s": 0.0,
         "summary": "skip (sem patient_id)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-27T09:20:54",
-        "latency_s": 0.031,
+        "timestamp": "2026-05-31T23:45:59",
+        "latency_s": 0.0368,
         "summary": "0 chunk(s), scores=[]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-27T09:20:55",
-        "latency_s": 1.2462,
-        "summary": "113 chars: 'Paciente convulsionando há 5 minutos. Realizar manobra de CPR, manter a temperat'",
+        "timestamp": "2026-05-31T23:46:00",
+        "latency_s": 0.9423,
+        "summary": "50 chars: 'Paciente convulsionando há 5 minutos, o que fazer?'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-27T09:20:55",
-        "latency_s": 0.0,
-        "summary": "sem flags",
+        "timestamp": "2026-05-31T23:46:00",
+        "latency_s": 0.0001,
+        "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-27T09:20:55",
-        "latency_s": 0.0003,
+        "timestamp": "2026-05-31T23:46:00",
+        "latency_s": 0.0004,
         "summary": "ALERTA emitido pid=None",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-27T09:20:55",
+        "timestamp": "2026-05-31T23:46:00",
         "latency_s": 0.0,
-        "summary": "final=250 chars",
+        "summary": "final=187 chars",
         "error": null
       }
     ]

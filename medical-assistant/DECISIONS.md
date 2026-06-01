@@ -829,4 +829,60 @@ seria estendido para chamar um `AlertSink` injetado via DI — `JsonlSink`
 **Onde**: `assistant/graph_nodes.py:emit_alert_if_needed`, log em
 `logging_/alerts.jsonl`.
 
+---
+
+## 22. Guardrails como módulo unificado (Fase 6)
+
+**Decisão**: o guardrail simplista do Nó 7 da Fase 5 (regex inline) foi
+substituído por um módulo dedicado em `assistant/guardrails/` com 5
+categorias, cada uma como subclasse de uma `Guardrail` ABC. Um registry
+central coordena execução e ação (rewrite via LLM para `block`s; nota
+anexada para `warning`s).
+
+**As 5 categorias**:
+
+| Nome | Nível | Side | O que detecta |
+|---|---|---|---|
+| `prescricao_direta` | block | output | Verbo imperativo + dose, droga + dose + posologia, OU dose por extenso ("quinhentos miligramas") |
+| `diagnostico_definitivo` | block | output | Marcadores inequívocos de certeza ("trata-se de", "diagnóstico definitivo", "sem dúvida") |
+| `decisao_clinica_final` | block | output | Alta, internação, cirurgia, suspensão de medicação contínua |
+| `bypass_attempt` | block | **input** | Jailbreaks documentados ("ignore suas regras", "modo desenvolvedor", "you are now") |
+| `fora_escopo_residual` | warning | output | Deriva de tema no output (receita culinária, código Python, esporte, entretenimento) |
+
+**Por quê**:
+- Cada guardrail tem **razão clínica própria** documentada em docstring,
+  não só razão técnica. Médicos podem ler e julgar.
+- Cada um tem **prompt de rewrite específico** que o LLM consegue executar
+  bem (genérico produz reescritas vagas).
+- Níveis e sides diferentes exigem ações diferentes — modelar como classe
+  com método `detect()` em comum é mais limpo que regex inline espalhada
+  pelo grafo.
+- O registry permite rodar todos os output guardrails em uma passada e
+  combinar prompts num único rewrite (decisão deliberada: 1 chamada de
+  LLM é mais barata que loop, e na prática o LLM resolve múltiplos
+  problemas em paralelo).
+
+**Falsos positivos vs falsos negativos**: em contexto clínico, FPs são
+preferíveis. Um false-block faz o assistente ser mais conservador (e o
+médico pode reformular a pergunta); um false-pass entrega prescrição
+direta. A regex foi calibrada empiricamente (`evaluation/eval_guardrails.py`
+roda 30 casos — 25 por guardrail + 5 cruzados, score atual 30/30).
+
+**Bypass é o único input-side**: ele dispara curto-circuito no Nó 0 do
+grafo (novo, antes de classify_intent). Quando detectado, vai direto pro
+refuse_node com mensagem firme de segurança (`BYPASS_REFUSE_MESSAGE`),
+pulando RAG, paciente e LLM principal.
+
+**Compatibility break (deliberado)**: os campos `guardrail_flags: list[str]`
+e `was_rewritten: bool` do State da Fase 5 foram removidos em favor de
+`output_guardrails_triggered: list[dict]` e `input_guardrails_triggered:
+list[dict]`. Cada dict carrega muito mais informação (severity, matched
+patterns, action_taken). Reducers `operator.add` foram tirados desses
+campos — guardrail_check e rewrite_node ESCREVEM por replace, não acumulam.
+
+**Onde**: `assistant/guardrails/{base,prescription,diagnosis,clinical_decision,bypass,scope,registry}.py`,
+`assistant/graph_nodes.py:input_guardrail_check`, `assistant/graph_nodes.py:guardrail_check`,
+`assistant/graph_nodes.py:make_rewrite_node`. Avaliação reprodutível
+em `evaluation/eval_guardrails.py`.
+
 

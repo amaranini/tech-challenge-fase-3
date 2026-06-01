@@ -33,14 +33,19 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from assistant.graph_prompts import (
     GENERATE_USER_TEMPLATE,
     REFUSE_TEMPLATE,
-    REWRITE_SYSTEM_PROMPT,
-    REWRITE_USER_TEMPLATE,
     TRIAGE_DEFAULT_FALLBACK,
     TRIAGE_SYSTEM_PROMPT,
     TRIAGE_USER_TEMPLATE,
     TRIAGE_VALID,
 )
 from assistant.graph_state import AlertEntry, MedicalState, NodeTraceEntry
+from assistant.guardrails.bypass import REFUSE_MESSAGE as BYPASS_REFUSE_MESSAGE
+from assistant.guardrails.registry import (
+    OUTPUT_GUARDRAILS,
+    run_input_guardrails,
+    run_output_guardrails,
+)
+from assistant.guardrails.scope import SCOPE_NOTE
 from assistant.intent_classifier import classify_intent_rules
 from assistant.rag.retriever import ProtocolRetriever, RetrievedChunk
 from assistant.router import PATIENT_ID_RE
@@ -470,69 +475,113 @@ def make_generate_response_node(
 
 
 # ────────────────────────────────────────────────────────────────────────
-# Nó 7 — guardrail_check
-# Detecção mínima nesta fase (sofisticado vem na Fase 6).
+# Nó 0 — input_guardrail_check (Fase 6)
+# Roda guardrails input-side ANTES do classify_intent. Se bypass dispara,
+# o grafo curto-circuita pro refuse_node (com mensagem específica de segurança).
 # ────────────────────────────────────────────────────────────────────────
 
-# Padrões mínimos nesta fase (sofisticado vem na Fase 6).
-# Padrão 1: verbo imperativo + dose dentro de uma janela de 4 palavras.
-#   Cobre "prescrevo amoxicilina 500mg" E "prescreva 500mg de amoxicilina".
-# Padrão 2: droga + dose + posologia ("amoxicilina 500mg a cada 8h"),
-#   detecta prescrição implícita sem verbo.
-_PRESCRIPTION_VERB_PATTERN = re.compile(
-    r"\b(prescrev[oa]|recomendo|administre|administrar)\b"
-    r"(?:\s+[\w\-]+){0,4}"  # até 4 palavras entre verbo e dose
-    r"\s+\d+[\.,]?\d*\s*(mg|ml|g|UI|mcg|mcg/kg)\b",
-    re.IGNORECASE,
-)
-_PRESCRIPTION_POSOLOGY_PATTERN = re.compile(
-    # droga capitalizada OU palavra começando por letra,
-    # seguida de dose (número + unidade),
-    # seguida de marcador de posologia ("a cada", "Nx ao dia", "N/Nh")
-    r"\b[A-ZÁÉÍÓÚÂÊÔÇ]?[a-záéíóúâêôç\-]{4,}\s+\d+[\.,]?\d*\s*(mg|ml|g|UI|mcg)"
-    r"\s+(a\s+cada|\d+\s*x\s*ao\s*dia|\d+\s*vezes\s*ao\s*dia|de\s+\d+\s*/\s*\d+\s*h)\b",
-    re.IGNORECASE,
-)
+def input_guardrail_check(state: MedicalState) -> dict:
+    """Aplica guardrails input-side na pergunta original.
 
+    Hoje só o `BypassAttemptGuardrail` é input-side. Quando ele dispara,
+    seta `bypass_detected=True` pra o roteamento do grafo encaminhar
+    direto pro refuse_node, pulando classify_intent + RAG + LLM.
+    """
+    t0 = time.monotonic()
+    node = "input_guardrail_check"
+    question = state["question"]
+    logger.info("[%s] question=%r", node, question[:80])
+
+    try:
+        results = run_input_guardrails(question)
+        triggered = [r for r in results if r.triggered]
+        bypass = any(r.guardrail_name == "bypass_attempt" and r.triggered for r in results)
+
+        if bypass:
+            logger.warning("[%s] BYPASS DETECTADO: %s", node, triggered[0].matched_patterns)
+            summary = f"BYPASS: {triggered[0].message}"
+        elif triggered:
+            summary = f"{len(triggered)} input guardrail(s) triggered"
+        else:
+            summary = "nenhum disparo"
+
+        trace = _make_trace(node, t0, summary=summary)
+        # Sempre armazena TODOS os results (triggered ou não) pra audit completo
+        return {
+            "input_guardrails_triggered": [r.to_dict() for r in results],
+            "bypass_detected": bypass,
+            "node_trace": [trace],
+        }
+
+    except Exception as e:  # noqa: BLE001
+        logger.exception("[%s] erro", node)
+        trace = _make_trace(node, t0, summary=f"erro: {e!s}", error=str(e))
+        return {
+            "input_guardrails_triggered": [],
+            "bypass_detected": False,
+            "node_trace": [trace],
+            "errors": [f"{node}: {e!s}"],
+        }
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Nó 7 — guardrail_check (Fase 6, refatorado)
+# Roda os 4 output-side guardrails. Anexa NOTAS de warnings ao draft.
+# Roteamento (conditional edge no graph.py): se algum BLOCK triggered →
+# rewrite_node; senão → emit_alert.
+# ────────────────────────────────────────────────────────────────────────
 
 def guardrail_check(state: MedicalState) -> dict:
-    """Verifica padrões problemáticos na draft_response.
+    """Aplica guardrails output-side ao draft_response.
 
-    Padrões mínimos nesta fase:
-    - Padrão 1: prescrição imperativa ("prescrevo amoxicilina 500mg")
-    - Padrão 2: prescrição implícita via posologia
-      ("amoxicilina 500mg a cada 8h")
-
-    Se detectado, adiciona flag em `guardrail_flags`; o grafo redireciona
-    pro rewrite_node. Sofisticado vem na Fase 6 (LLM-as-judge).
+    Substitui a versão simplista da Fase 5. Agora:
+    - Roda 4 output guardrails (prescrição, diagnóstico, decisão, escopo).
+    - Para WARNINGS triggered: anexa nota ao draft (sem chamar LLM).
+    - Para BLOCKS triggered: NÃO reescreve aqui — só sinaliza. Quem reescreve
+      é o rewrite_node, acessado via conditional edge.
     """
     t0 = time.monotonic()
     node = "guardrail_check"
     draft = state.get("draft_response", "") or ""
 
     try:
-        flags: list[str] = []
-        m1 = _PRESCRIPTION_VERB_PATTERN.search(draft)
-        m2 = _PRESCRIPTION_POSOLOGY_PATTERN.search(draft)
-        if m1:
-            flags.append(f"prescription_with_dose:{m1.group(0)}")
-        if m2 and not m1:
-            # Só conta o padrão 2 se o 1 já não casou (evita flag dupla)
-            flags.append(f"prescription_posology:{m2.group(0)}")
-        if flags:
-            logger.warning("[%s] flags detectadas: %s", node, flags)
-            trace = _make_trace(node, t0,
-                                summary=f"FLAG: {flags[0]}")
-        else:
-            logger.info("[%s] sem flags", node)
-            trace = _make_trace(node, t0, summary="sem flags")
+        results = run_output_guardrails(draft)
+        triggered = [r for r in results if r.triggered]
 
-        return {"guardrail_flags": flags, "node_trace": [trace]}
+        # Anexa notas de warnings (já que warnings não precisam de LLM)
+        new_draft = draft
+        for r in triggered:
+            if r.level == "warning" and r.guardrail_name == "fora_escopo_residual":
+                if SCOPE_NOTE.strip() not in new_draft:
+                    new_draft = new_draft + SCOPE_NOTE
+                r.action_taken = "note_appended"
+
+        blocks_triggered = [r for r in triggered if r.level == "block"]
+        if blocks_triggered:
+            summary = f"{len(blocks_triggered)} block(s) triggered: {blocks_triggered[0].guardrail_name}"
+            logger.warning("[%s] %s", node, summary)
+        elif triggered:
+            summary = f"{len(triggered)} warning(s) triggered"
+            logger.info("[%s] %s", node, summary)
+        else:
+            summary = "sem disparos"
+            logger.info("[%s] %s", node, summary)
+
+        trace = _make_trace(node, t0, summary=summary)
+        return {
+            "draft_response": new_draft,
+            "output_guardrails_triggered": [r.to_dict() for r in results],
+            "node_trace": [trace],
+        }
 
     except Exception as e:  # noqa: BLE001
         logger.exception("[%s] erro", node)
         trace = _make_trace(node, t0, summary=f"erro: {e!s}", error=str(e))
-        return {"node_trace": [trace], "errors": [f"{node}: {e!s}"]}
+        return {
+            "output_guardrails_triggered": [],
+            "node_trace": [trace],
+            "errors": [f"{node}: {e!s}"],
+        }
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -640,15 +689,26 @@ def finalize_response(state: MedicalState) -> dict:
 # ────────────────────────────────────────────────────────────────────────
 
 def refuse_node(state: MedicalState) -> dict:
-    """Gera resposta de recusa educada para perguntas fora de escopo."""
+    """Gera resposta de recusa. Mensagem depende do motivo:
+
+    - `bypass_detected=True` → mensagem firme de segurança (BYPASS_REFUSE_MESSAGE)
+    - senão (intent=fora_de_escopo) → mensagem educada padrão (REFUSE_TEMPLATE)
+    """
     t0 = time.monotonic()
     node = "refuse_node"
     question = state.get("question", "")
     short = (question[:60] + " […]") if len(question) > 60 else question
 
-    text = REFUSE_TEMPLATE.format(question_short=short)
-    logger.info("[%s] recusa gerada", node)
-    trace = _make_trace(node, t0, summary="recusa gerada (template fixo)")
+    if state.get("bypass_detected"):
+        text = BYPASS_REFUSE_MESSAGE
+        summary = "recusa por bypass detectado"
+        logger.warning("[%s] %s", node, summary)
+    else:
+        text = REFUSE_TEMPLATE.format(question_short=short)
+        summary = "recusa por fora_de_escopo (template fixo)"
+        logger.info("[%s] %s", node, summary)
+
+    trace = _make_trace(node, t0, summary=summary)
     return {"draft_response": text, "node_trace": [trace]}
 
 
@@ -659,34 +719,81 @@ def refuse_node(state: MedicalState) -> dict:
 # ────────────────────────────────────────────────────────────────────────
 
 def make_rewrite_node(llm: BaseChatModel) -> Callable[[MedicalState], dict]:
-    """Fábrica do rewrite_node — usa o `llm` clínico."""
+    """Fábrica do rewrite_node — usa o `llm` clínico.
+
+    Versão Fase 6: lê os `output_guardrails_triggered` do state, filtra os
+    BLOCKs, monta UM prompt combinado (1 chamada ao LLM) endereçando todos
+    os problemas detectados. Marca cada result com `action_taken="rewritten"`.
+    """
 
     def rewrite_node(state: MedicalState) -> dict:
         t0 = time.monotonic()
         node = "rewrite_node"
         draft = state.get("draft_response", "") or ""
-        flags = state.get("guardrail_flags") or []
-        logger.info("[%s] reescrevendo (flags=%s)", node, flags)
+        results_dicts = state.get("output_guardrails_triggered") or []
+
+        # Reconstrói GuardrailResult a partir dos dicts e filtra blocks
+        from assistant.guardrails.base import GuardrailResult
+        triggered_blocks = []
+        for d in results_dicts:
+            if d.get("triggered") and d.get("level") == "block":
+                # Pega a instância do guardrail registrado pra acessar rewrite_prompt
+                gr = next(
+                    (g for g in OUTPUT_GUARDRAILS if g.name == d["guardrail_name"]),
+                    None,
+                )
+                if gr is None:
+                    continue
+                triggered_blocks.append((gr, GuardrailResult(
+                    guardrail_name=d["guardrail_name"],
+                    triggered=True,
+                    level=d.get("level", "block"),
+                    applies_to=d.get("applies_to", "output"),
+                    matched_patterns=list(d.get("matched_patterns", [])),
+                    severity=d.get("severity", 0.0),
+                    message=d.get("message", ""),
+                )))
+
+        if not triggered_blocks:
+            # Não devia chegar aqui via conditional edge, mas defensivo
+            logger.info("[%s] sem blocks pra reescrever — no-op", node)
+            trace = _make_trace(node, t0, summary="sem blocks pra reescrever")
+            return {"node_trace": [trace]}
+
+        logger.info("[%s] reescrevendo (%d blocks)", node, len(triggered_blocks))
 
         try:
-            user_prompt = REWRITE_USER_TEMPLATE.format(draft_response=draft)
-            rewritten = _call_llm(
-                llm,
-                system_prompt=REWRITE_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
+            # Constrói prompt combinado (registry helper)
+            from assistant.guardrails.registry import _build_combined_rewrite_prompt
+            prompt = _build_combined_rewrite_prompt(draft, triggered_blocks)
+            rewritten = _call_llm(llm, system_prompt=None, user_prompt=prompt)
+
+            # Atualiza action_taken nos dicts do state
+            for d in results_dicts:
+                if d.get("triggered") and d.get("level") == "block":
+                    d["action_taken"] = "rewritten"
+
+            trace = _make_trace(
+                node, t0,
+                summary=f"reescrito ({len(rewritten)} chars, {len(triggered_blocks)} block(s))",
             )
-            trace = _make_trace(node, t0,
-                                summary=f"reescrito ({len(rewritten)} chars)")
+            # Substitui a lista inteira (não usa o reducer add) — voltamos o
+            # state com a lista atualizada (1 forma de "overwrite": passar a
+            # mesma lista com mudanças).
             return {
                 "draft_response": rewritten,
-                "was_rewritten": True,
+                "output_guardrails_triggered": results_dicts,
                 "node_trace": [trace],
             }
         except Exception as e:  # noqa: BLE001
-            logger.exception("[%s] erro", node)
-            # Fallback: mantém draft mas marca was_rewritten=False e registra erro
+            logger.exception("[%s] erro no rewrite", node)
+            # Marca action_taken="rewrite_failed" pra audit
+            for d in results_dicts:
+                if d.get("triggered") and d.get("level") == "block":
+                    d["action_taken"] = f"rewrite_failed: {e!s}"
             trace = _make_trace(node, t0, summary=f"erro: {e!s}", error=str(e))
             return {
+                "output_guardrails_triggered": results_dicts,
                 "node_trace": [trace],
                 "errors": [f"{node}: {e!s}"],
             }

@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 4,
   "n_total": 4,
-  "latency_s": 2.86,
+  "latency_s": 3.94,
   "checks": [
     {
       "ok": true,
@@ -64,74 +64,81 @@
         "score": 0.8173
       }
     ],
-    "draft_response": "O protocolo para crise asmática é o protocolo_013_crisa_asma.md, que destina-se a orientar a prática clínica na avaliação, tratamento e acompanhamento de pacientes asmáticos em crise, visando a melhoria da qualidade de vida e controle da doença.",
-    "guardrail_flags": [],
-    "was_rewritten": false,
-    "final_response": "O protocolo para crise asmática é o protocolo_013_crisa_asma.md, que destina-se a orientar a prática clínica na avaliação, tratamento e acompanhamento de pacientes asmáticos em crise, visando a melhoria da qualidade de vida e controle da doença.\n\n**Fontes consultadas:**\n- protocol_033_pediatria.md · _Indicação_ (score 0.8201)\n- protocol_001_pneumologia.md · _Indicação_ (score 0.8198)\n- protocol_031_pneumologia.md · _Indicação_ (score 0.8173)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "draft_response": "Este protocolo destina-se ao manejo e tratamento da asma em pacientes pediátricos. A asma é uma doença inflamatória crônica das vias aéreas, que frequentemente se apresenta em crianças e pode levar a episódios de dificuldade respiratória, tosse e chiado no peito. A identificação precoce e o manejo adequado são essenciais para evitar complicações e promover a qualidade de vida da criança.",
+    "guardrail_flags": null,
+    "was_rewritten": null,
+    "final_response": "Este protocolo destina-se ao manejo e tratamento da asma em pacientes pediátricos. A asma é uma doença inflamatória crônica das vias aéreas, que frequentemente se apresenta em crianças e pode levar a episódios de dificuldade respiratória, tosse e chiado no peito. A identificação precoce e o manejo adequado são essenciais para evitar complicações e promover a qualidade de vida da criança.\n\n**Fontes consultadas:**\n- protocol_033_pediatria.md · _Indicação_ (score 0.8201)\n- protocol_001_pneumologia.md · _Indicação_ (score 0.8198)\n- protocol_031_pneumologia.md · _Indicação_ (score 0.8173)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
     "alerts_emitted": [],
     "errors": [],
     "node_trace": [
       {
+        "node": "input_guardrail_check",
+        "timestamp": "2026-05-31T23:46:00",
+        "latency_s": 0.0,
+        "summary": "nenhum disparo",
+        "error": null
+      },
+      {
         "node": "classify_intent",
-        "timestamp": "2026-05-27T09:20:55",
+        "timestamp": "2026-05-31T23:46:00",
         "latency_s": 0.0,
         "summary": "clinica (kw='asmática')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-27T09:20:56",
-        "latency_s": 0.465,
+        "timestamp": "2026-05-31T23:46:01",
+        "latency_s": 0.4753,
         "summary": "raw='baixa' → baixa",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-27T09:20:56",
-        "latency_s": 0.0018,
+        "timestamp": "2026-05-31T23:46:01",
+        "latency_s": 0.0015,
         "summary": "P0002 (argumento) → Maria Flor Barros, 33a",
         "error": null
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-27T09:20:56",
+        "timestamp": "2026-05-31T23:46:01",
         "latency_s": 0.0002,
         "summary": "P0002 → 0 exame(s) pendente(s)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-27T09:20:56",
-        "latency_s": 0.0175,
+        "timestamp": "2026-05-31T23:46:01",
+        "latency_s": 0.0169,
         "summary": "3 chunk(s), scores=[0.82, 0.82, 0.82]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-27T09:20:58",
-        "latency_s": 2.369,
-        "summary": "245 chars: 'O protocolo para crise asmática é o protocolo_013_crisa_asma.md, que destina-se '",
+        "timestamp": "2026-05-31T23:46:04",
+        "latency_s": 3.4344,
+        "summary": "390 chars: 'Este protocolo destina-se ao manejo e tratamento da asma em pacientes pediátrico'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-27T09:20:58",
-        "latency_s": 0.0,
-        "summary": "sem flags",
+        "timestamp": "2026-05-31T23:46:04",
+        "latency_s": 0.0005,
+        "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-27T09:20:58",
+        "timestamp": "2026-05-31T23:46:04",
         "latency_s": 0.0,
         "summary": "no-op (urgency=baixa)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-27T09:20:58",
+        "timestamp": "2026-05-31T23:46:04",
         "latency_s": 0.0,
-        "summary": "final=526 chars",
+        "summary": "final=671 chars",
         "error": null
       }
     ]

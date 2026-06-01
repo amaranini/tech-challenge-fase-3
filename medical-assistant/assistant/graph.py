@@ -32,6 +32,7 @@ from assistant.graph_nodes import (
     emit_alert_if_needed,
     finalize_response,
     guardrail_check,
+    input_guardrail_check,
     make_check_pending_exams_node,
     make_fetch_patient_data_node,
     make_generate_response_node,
@@ -52,6 +53,13 @@ TRACES_LOG_PATH = _PROJECT_ROOT / "logging_" / "graph_traces.jsonl"
 # Roteamento condicional
 # ────────────────────────────────────────────────────────────────────────
 
+def _route_after_input_guardrail(state: MedicalState) -> str:
+    """De input_guardrail_check (Nó 0, Fase 6): bypass → refuse; senão → classify."""
+    if state.get("bypass_detected"):
+        return "refuse_node"
+    return "classify_intent"
+
+
 def _route_after_intent(state: MedicalState) -> str:
     """De classify_intent: fora_de_escopo → refuse; senão → triage."""
     if state.get("intent") == "fora_de_escopo":
@@ -60,9 +68,13 @@ def _route_after_intent(state: MedicalState) -> str:
 
 
 def _route_after_guardrail(state: MedicalState) -> str:
-    """De guardrail_check: flags → rewrite; senão → emit_alert."""
-    flags = state.get("guardrail_flags") or []
-    if flags:
+    """De guardrail_check: algum BLOCK triggered → rewrite; senão → emit_alert.
+
+    Atualizado na Fase 6: agora olha `output_guardrails_triggered`, não o
+    antigo `guardrail_flags` (que foi removido).
+    """
+    results = state.get("output_guardrails_triggered") or []
+    if any(r.get("triggered") and r.get("level") == "block" for r in results):
         return "rewrite_node"
     return "emit_alert_if_needed"
 
@@ -123,6 +135,7 @@ def build_graph(
     g: StateGraph = StateGraph(MedicalState)
 
     # ─── Nós ─────────────────────────────────────────────────────────────
+    g.add_node("input_guardrail_check", input_guardrail_check)  # Nó 0 (Fase 6)
     g.add_node("classify_intent", classify_intent)
     g.add_node("triage_urgency", triage_node)
     g.add_node("fetch_patient_data", fetch_node)
@@ -136,7 +149,17 @@ def build_graph(
     g.add_node("rewrite_node", rewrite_n)
 
     # ─── Entry ──────────────────────────────────────────────────────────
-    g.add_edge(START, "classify_intent")
+    g.add_edge(START, "input_guardrail_check")
+
+    # ─── Roteamento 0 (Fase 6): bypass → refuse curto-circuita o grafo ─
+    g.add_conditional_edges(
+        "input_guardrail_check",
+        _route_after_input_guardrail,
+        {
+            "refuse_node": "refuse_node",
+            "classify_intent": "classify_intent",
+        },
+    )
 
     # ─── Roteamento 1: classify_intent → refuse OU triage ──────────────
     g.add_conditional_edges(
@@ -217,15 +240,29 @@ def run_medical_graph(
     try:
         _ensure_traces_log()
         # Serializar tudo, mas alguns objetos podem não ser JSON-friendly
+        # Fase 6: trocou guardrail_flags/was_rewritten por listas estruturadas
+        output_guardrails = state_out.get("output_guardrails_triggered") or []
+        was_rewritten = any(
+            r.get("action_taken") == "rewritten"
+            for r in output_guardrails
+        )
         log_entry = {
             "ts": state_out.get("node_trace", [{}])[-1].get("timestamp"),
+            "request_id": state_out.get("request_id"),
             "question": question,
             "patient_id": state_out.get("patient_id"),
             "intent": state_out.get("intent"),
             "urgency": state_out.get("urgency"),
             "rag_has_sources": state_out.get("rag_has_sources"),
-            "guardrail_flags": state_out.get("guardrail_flags"),
-            "was_rewritten": state_out.get("was_rewritten"),
+            "bypass_detected": state_out.get("bypass_detected"),
+            "input_guardrails_triggered": [
+                r for r in (state_out.get("input_guardrails_triggered") or [])
+                if r.get("triggered")
+            ],
+            "output_guardrails_triggered": [
+                r for r in output_guardrails if r.get("triggered")
+            ],
+            "was_rewritten": was_rewritten,
             "alerts_count": len(state_out.get("alerts_emitted") or []),
             "errors": state_out.get("errors"),
             "node_trace": state_out.get("node_trace"),
@@ -303,13 +340,17 @@ def _smoke_test() -> int:
     total = time.monotonic() - t0
 
     print(f"  ✓ executado em {total:.2f}s")
+    print(f"  request_id:      {state.get('request_id')}")
     print(f"  intent:          {state.get('intent')}")
     print(f"  urgency:         {state.get('urgency')}")
     print(f"  rag_has_sources: {state.get('rag_has_sources')}")
     print(f"  patient_data:    {'sim' if state.get('patient_data') else 'não'}")
     print(f"  pending_exams:   {len(state.get('pending_exams') or [])}")
-    print(f"  guardrail_flags: {state.get('guardrail_flags')}")
-    print(f"  was_rewritten:   {state.get('was_rewritten')}")
+    print(f"  bypass_detected: {state.get('bypass_detected')}")
+    triggered_input = [r for r in (state.get('input_guardrails_triggered') or []) if r.get('triggered')]
+    triggered_output = [r for r in (state.get('output_guardrails_triggered') or []) if r.get('triggered')]
+    print(f"  input guardrails triggered:  {[r['guardrail_name'] for r in triggered_input]}")
+    print(f"  output guardrails triggered: {[r['guardrail_name'] for r in triggered_output]}")
     print(f"  alerts_emitted:  {len(state.get('alerts_emitted') or [])}")
     print(f"  errors:          {state.get('errors')}")
     print()

@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 5,
   "n_total": 5,
-  "latency_s": 4.18,
+  "latency_s": 4.42,
   "checks": [
     {
       "ok": true,
@@ -41,29 +41,36 @@
     "rag_has_sources": false,
     "rag_chunks_preview": [],
     "draft_response": "Esta interface é restrita a profissionais de saúde e a perguntas relacionadas à prática clínica ou à administração hospitalar. Sua mensagem (\"Me ensina a fazer bolo de chocolate\") está fora do escopo desta ferramenta. Posso ajudar com protocolos institucionais, dúvidas sobre condutas, interpretação de exames ou consultas a prontuário de paciente.",
-    "guardrail_flags": [],
-    "was_rewritten": false,
+    "guardrail_flags": null,
+    "was_rewritten": null,
     "final_response": "Esta interface é restrita a profissionais de saúde e a perguntas relacionadas à prática clínica ou à administração hospitalar. Sua mensagem (\"Me ensina a fazer bolo de chocolate\") está fora do escopo desta ferramenta. Posso ajudar com protocolos institucionais, dúvidas sobre condutas, interpretação de exames ou consultas a prontuário de paciente.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
     "alerts_emitted": [],
     "errors": [],
     "node_trace": [
       {
+        "node": "input_guardrail_check",
+        "timestamp": "2026-05-31T23:45:50",
+        "latency_s": 0.0,
+        "summary": "nenhum disparo",
+        "error": null
+      },
+      {
         "node": "classify_intent",
-        "timestamp": "2026-05-27T09:20:46",
+        "timestamp": "2026-05-31T23:45:50",
         "latency_s": 0.0,
         "summary": "fora_de_escopo (nenhuma kw casou)",
         "error": null
       },
       {
         "node": "refuse_node",
-        "timestamp": "2026-05-27T09:20:46",
+        "timestamp": "2026-05-31T23:45:50",
         "latency_s": 0.0,
-        "summary": "recusa gerada (template fixo)",
+        "summary": "recusa por fora_de_escopo (template fixo)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-27T09:20:46",
+        "timestamp": "2026-05-31T23:45:50",
         "latency_s": 0.0,
         "summary": "final=429 chars",
         "error": null

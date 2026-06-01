@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 2,
   "n_total": 2,
-  "latency_s": 3.73,
+  "latency_s": 4.18,
   "checks": [
     {
       "ok": true,
@@ -37,80 +37,87 @@
     "pending_exams": [
       {
         "tipo_exame": "Hemograma completo",
-        "data_solicitacao": "2026-05-04",
+        "data_solicitacao": "2026-05-08",
         "prioridade": "rotina"
       }
     ],
     "rag_has_sources": false,
     "rag_chunks_preview": [],
-    "draft_response": "Paciente P0001, de 5 anos, apresenta sintomas de tontura ao acordar. A tontura pode ser resultado de problemas cardíacos, como arritmia ou hipertensão, ou de problemas cerebrais, como AVC. É importante realizar exames de imagem, como tomografia computadorizada (TC) e ecocardiograma, para avaliar o coração e a circulação sanguínea. A tontura pode ser uma manifestação de uma condição grave e requer acompanhamento médico regular.",
-    "guardrail_flags": [],
-    "was_rewritten": false,
-    "final_response": "Paciente P0001, de 5 anos, apresenta sintomas de tontura ao acordar. A tontura pode ser resultado de problemas cardíacos, como arritmia ou hipertensão, ou de problemas cerebrais, como AVC. É importante realizar exames de imagem, como tomografia computadorizada (TC) e ecocardiograma, para avaliar o coração e a circulação sanguínea. A tontura pode ser uma manifestação de uma condição grave e requer acompanhamento médico regular.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "draft_response": "Paciente P0001, com histórico de asma leve e episódios de bronquite, apresenta tontura ao acordar. O paciente é um menino de 5 anos com histórico de asma leve, episódios de bronquite e recebe acompanhamento pediátrico regular. A tontura pode ser causada por fatores como hipotensão, hipertensão arterial, ou problemas de sono. A necessidade de exames adicionais, como um [rotina] de hemograma completo, deve ser avaliada.",
+    "guardrail_flags": null,
+    "was_rewritten": null,
+    "final_response": "Paciente P0001, com histórico de asma leve e episódios de bronquite, apresenta tontura ao acordar. O paciente é um menino de 5 anos com histórico de asma leve, episódios de bronquite e recebe acompanhamento pediátrico regular. A tontura pode ser causada por fatores como hipotensão, hipertensão arterial, ou problemas de sono. A necessidade de exames adicionais, como um [rotina] de hemograma completo, deve ser avaliada.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
     "alerts_emitted": [],
     "errors": [],
     "node_trace": [
       {
+        "node": "input_guardrail_check",
+        "timestamp": "2026-05-31T23:46:09",
+        "latency_s": 0.0,
+        "summary": "nenhum disparo",
+        "error": null
+      },
+      {
         "node": "classify_intent",
-        "timestamp": "2026-05-27T09:21:02",
+        "timestamp": "2026-05-31T23:46:09",
         "latency_s": 0.0,
         "summary": "clinica (kw='paciente')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-27T09:21:03",
-        "latency_s": 0.4777,
+        "timestamp": "2026-05-31T23:46:10",
+        "latency_s": 0.503,
         "summary": "raw='baixa' → baixa",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-27T09:21:03",
-        "latency_s": 0.0003,
+        "timestamp": "2026-05-31T23:46:10",
+        "latency_s": 0.0009,
         "summary": "P0001 (argumento) → Sr. Apollo Sousa, 5a",
         "error": null
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-27T09:21:03",
-        "latency_s": 0.0001,
+        "timestamp": "2026-05-31T23:46:10",
+        "latency_s": 0.0002,
         "summary": "P0001 → 1 exame(s) pendente(s)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-27T09:21:03",
-        "latency_s": 0.0164,
+        "timestamp": "2026-05-31T23:46:10",
+        "latency_s": 0.0217,
         "summary": "0 chunk(s), scores=[]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-27T09:21:06",
-        "latency_s": 3.2277,
-        "summary": "430 chars: 'Paciente P0001, de 5 anos, apresenta sintomas de tontura ao acordar. A tontura p'",
+        "timestamp": "2026-05-31T23:46:13",
+        "latency_s": 3.6338,
+        "summary": "421 chars: 'Paciente P0001, com histórico de asma leve e episódios de bronquite, apresenta t'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-27T09:21:06",
-        "latency_s": 0.0,
-        "summary": "sem flags",
+        "timestamp": "2026-05-31T23:46:13",
+        "latency_s": 0.0005,
+        "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-27T09:21:06",
+        "timestamp": "2026-05-31T23:46:13",
         "latency_s": 0.0,
         "summary": "no-op (urgency=baixa)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-27T09:21:06",
+        "timestamp": "2026-05-31T23:46:13",
         "latency_s": 0.0,
-        "summary": "final=511 chars",
+        "summary": "final=502 chars",
         "error": null
       }
     ]

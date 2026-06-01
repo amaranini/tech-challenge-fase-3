@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 2,
   "n_total": 2,
-  "latency_s": 1.91,
+  "latency_s": 2.08,
   "checks": [
     {
       "ok": true,
@@ -37,12 +37,12 @@
     "pending_exams": [
       {
         "tipo_exame": "Ecocardiograma",
-        "data_solicitacao": "2026-05-04",
+        "data_solicitacao": "2026-05-08",
         "prioridade": "urgente"
       },
       {
         "tipo_exame": "Raio-X de tórax",
-        "data_solicitacao": "2026-05-09",
+        "data_solicitacao": "2026-05-13",
         "prioridade": "rotina"
       }
     ],
@@ -68,71 +68,78 @@
       }
     ],
     "draft_response": "Para o paciente P0003, conduta em hipertensão?",
-    "guardrail_flags": [],
-    "was_rewritten": false,
+    "guardrail_flags": null,
+    "was_rewritten": null,
     "final_response": "Para o paciente P0003, conduta em hipertensão?\n\n**Fontes consultadas:**\n- protocol_034_emergência.md · _Critérios de Alta/Encaminhamento_ (score 0.6827)\n- protocol_019_emergência.md · _Critérios de alta/encaminhamento_ (score 0.6424)\n- protocol_012_psiquiatria.md · _Critérios de alta/encaminhamento_ (score 0.6269)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
     "alerts_emitted": [],
     "errors": [],
     "node_trace": [
       {
+        "node": "input_guardrail_check",
+        "timestamp": "2026-05-31T23:46:04",
+        "latency_s": 0.0,
+        "summary": "nenhum disparo",
+        "error": null
+      },
+      {
         "node": "classify_intent",
-        "timestamp": "2026-05-27T09:20:58",
+        "timestamp": "2026-05-31T23:46:04",
         "latency_s": 0.0,
         "summary": "clinica (kw='paciente')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-27T09:20:59",
-        "latency_s": 0.4552,
+        "timestamp": "2026-05-31T23:46:05",
+        "latency_s": 0.5034,
         "summary": "raw='baixa' → baixa",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-27T09:20:59",
-        "latency_s": 0.0003,
+        "timestamp": "2026-05-31T23:46:05",
+        "latency_s": 0.0008,
         "summary": "P0003 (regex) → Murilo da Mata, 19a",
         "error": null
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-27T09:20:59",
-        "latency_s": 0.0002,
+        "timestamp": "2026-05-31T23:46:05",
+        "latency_s": 0.0003,
         "summary": "P0003 → 2 exame(s) pendente(s)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-27T09:20:59",
-        "latency_s": 0.0182,
+        "timestamp": "2026-05-31T23:46:05",
+        "latency_s": 0.0263,
         "summary": "3 chunk(s), scores=[0.68, 0.64, 0.63]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-27T09:21:00",
-        "latency_s": 1.4274,
+        "timestamp": "2026-05-31T23:46:06",
+        "latency_s": 1.5384,
         "summary": "46 chars: 'Para o paciente P0003, conduta em hipertensão?'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-27T09:21:00",
-        "latency_s": 0.0,
-        "summary": "sem flags",
+        "timestamp": "2026-05-31T23:46:06",
+        "latency_s": 0.0003,
+        "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-27T09:21:00",
+        "timestamp": "2026-05-31T23:46:06",
         "latency_s": 0.0,
         "summary": "no-op (urgency=baixa)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-27T09:21:00",
+        "timestamp": "2026-05-31T23:46:06",
         "latency_s": 0.0,
         "summary": "final=396 chars",
         "error": null

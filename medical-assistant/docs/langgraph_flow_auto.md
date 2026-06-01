@@ -11,6 +11,7 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
+	input_guardrail_check(input_guardrail_check)
 	classify_intent(classify_intent)
 	triage_urgency(triage_urgency)
 	fetch_patient_data(fetch_patient_data)
@@ -23,7 +24,7 @@ graph TD;
 	refuse_node(refuse_node)
 	rewrite_node(rewrite_node)
 	__end__([<p>__end__</p>]):::last
-	__start__ --> classify_intent;
+	__start__ --> input_guardrail_check;
 	check_pending_exams --> retrieve_protocol;
 	emit_alert_if_needed --> finalize_response;
 	fetch_patient_data --> check_pending_exams;
@@ -33,6 +34,8 @@ graph TD;
 	retrieve_protocol --> generate_response;
 	rewrite_node --> emit_alert_if_needed;
 	triage_urgency --> fetch_patient_data;
+	input_guardrail_check -.-> refuse_node;
+	input_guardrail_check -.-> classify_intent;
 	classify_intent -.-> refuse_node;
 	classify_intent -.-> triage_urgency;
 	guardrail_check -.-> rewrite_node;
