@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 4,
   "n_total": 4,
-  "latency_s": 3.3,
+  "latency_s": 5.8,
   "checks": [
     {
       "ok": true,
@@ -43,10 +43,10 @@
         "score": 0.5767
       }
     ],
-    "draft_response": "Paciente P9999:\n- Conduta atual: Ambulatorial\n- Dados clínicos: 55 anos, peso 75 kg, não há alergias conhecidas, não há comorbidades significativas, sinais vitais estáveis.\n- Conduta recomendada: Encaminhar para especialista, pois há sinais de recaídas e necessidade de tratamento intensivo.",
+    "draft_response": "Paciente P9999: O paciente P9999 pode ser considerado para alta quando apresentar remissão clínica e laboratorial da DII por pelo menos 3 meses, estar em condições de seguir o tratamento ambulatorial, ter recebido orientações sobre o manejo da doença e sinais de alerta para recaídas. Se não responder ao tratamento após 6 meses, houver complicações que necessitem de manejo cirúrgico ou o paciente apresentar necessidade de suporte adicional que não possa ser fornecido no ambulatório, deve ser encaminhado para especialista. Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.",
     "guardrail_flags": null,
     "was_rewritten": null,
-    "final_response": "Paciente P9999:\n- Conduta atual: Ambulatorial\n- Dados clínicos: 55 anos, peso 75 kg, não há alergias conhecidas, não há comorbidades significativas, sinais vitais estáveis.\n- Conduta recomendada: Encaminhar para especialista, pois há sinais de recaídas e necessidade de tratamento intensivo.\n\n**Fontes consultadas:**\n- protocol_023_gastroenterologia.md · _Critérios de alta/encaminhamento_ (score 0.5767)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "final_response": "Paciente P9999: O paciente P9999 pode ser considerado para alta quando apresentar remissão clínica e laboratorial da DII por pelo menos 3 meses, estar em condições de seguir o tratamento ambulatorial, ter recebido orientações sobre o manejo da doença e sinais de alerta para recaídas. Se não responder ao tratamento após 6 meses, houver complicações que necessitem de manejo cirúrgico ou o paciente apresentar necessidade de suporte adicional que não possa ser fornecido no ambulatório, deve ser encaminhado para especialista. Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.\n\n**Fontes consultadas:**\n- protocol_023_gastroenterologia.md · _Critérios de alta/encaminhamento_ (score 0.5767)",
     "alerts_emitted": [],
     "errors": [
       "fetch_patient_data: paciente P9999 não encontrado"
@@ -54,72 +54,72 @@
     "node_trace": [
       {
         "node": "input_guardrail_check",
-        "timestamp": "2026-05-31T23:46:18",
+        "timestamp": "2026-06-01T21:36:20",
         "latency_s": 0.0,
         "summary": "nenhum disparo",
         "error": null
       },
       {
         "node": "classify_intent",
-        "timestamp": "2026-05-31T23:46:18",
+        "timestamp": "2026-06-01T21:36:20",
         "latency_s": 0.0,
         "summary": "clinica (kw='paciente')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-31T23:46:18",
-        "latency_s": 0.4816,
+        "timestamp": "2026-06-01T21:36:21",
+        "latency_s": 0.5669,
         "summary": "raw='baixa' → baixa",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-31T23:46:18",
-        "latency_s": 0.0006,
+        "timestamp": "2026-06-01T21:36:21",
+        "latency_s": 0.0005,
         "summary": "P9999 (regex) → NÃO ENCONTRADO",
         "error": "patient_not_found:P9999"
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-31T23:46:18",
-        "latency_s": 0.0004,
+        "timestamp": "2026-06-01T21:36:21",
+        "latency_s": 0.0002,
         "summary": "P9999 → 0 exame(s) pendente(s)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-31T23:46:18",
-        "latency_s": 0.022,
+        "timestamp": "2026-06-01T21:36:21",
+        "latency_s": 0.0246,
         "summary": "1 chunk(s), scores=[0.58]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-31T23:46:21",
-        "latency_s": 2.7843,
-        "summary": "291 chars: 'Paciente P9999: - Conduta atual: Ambulatorial - Dados clínicos: 55 anos, peso 75'",
+        "timestamp": "2026-06-01T21:36:26",
+        "latency_s": 5.1951,
+        "summary": "604 chars: 'Paciente P9999: O paciente P9999 pode ser considerado para alta quando apresenta'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-31T23:46:21",
-        "latency_s": 0.0003,
+        "timestamp": "2026-06-01T21:36:26",
+        "latency_s": 0.0006,
         "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-31T23:46:21",
+        "timestamp": "2026-06-01T21:36:26",
         "latency_s": 0.0,
         "summary": "no-op (urgency=baixa)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-31T23:46:21",
+        "timestamp": "2026-06-01T21:36:26",
         "latency_s": 0.0,
-        "summary": "final=485 chars",
+        "summary": "final=717 chars",
         "error": null
       }
     ]

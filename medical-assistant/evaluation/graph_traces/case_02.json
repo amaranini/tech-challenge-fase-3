@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 3,
   "n_total": 3,
-  "latency_s": 0.0,
+  "latency_s": 0.01,
   "checks": [
     {
       "ok": true,
@@ -41,28 +41,28 @@
     "node_trace": [
       {
         "node": "input_guardrail_check",
-        "timestamp": "2026-05-31T23:45:50",
+        "timestamp": "2026-06-01T21:35:45",
         "latency_s": 0.0,
         "summary": "nenhum disparo",
         "error": null
       },
       {
         "node": "classify_intent",
-        "timestamp": "2026-05-31T23:45:50",
+        "timestamp": "2026-06-01T21:35:45",
         "latency_s": 0.0,
         "summary": "fora_de_escopo (nenhuma kw casou)",
         "error": null
       },
       {
         "node": "refuse_node",
-        "timestamp": "2026-05-31T23:45:50",
+        "timestamp": "2026-06-01T21:35:45",
         "latency_s": 0.0,
         "summary": "recusa por fora_de_escopo (template fixo)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-31T23:45:50",
+        "timestamp": "2026-06-01T21:35:45",
         "latency_s": 0.0,
         "summary": "final=430 chars",
         "error": null

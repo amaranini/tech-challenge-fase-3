@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 2,
   "n_total": 2,
-  "latency_s": 2.81,
+  "latency_s": 4.41,
   "checks": [
     {
       "ok": true,
@@ -28,81 +28,81 @@
     "pending_exams": null,
     "rag_has_sources": false,
     "rag_chunks_preview": [],
-    "draft_response": "Para prevenir TEV em pacientes acamados, é importante manter a temperatura corporal em um nível moderado. Utilize um aparelho de calor de corpo para manter a temperatura corporal entre 36,5 e 37,5 graus Celsius. Evite a exposição ao sol e a exposição prolongada ao frio.",
+    "draft_response": "Para prevenir TEV em pacientes acamados, é importante monitorar a pressão arterial regularmente. A pressão arterial de 140/90 mmHg ou superior deve ser considerada como um sinal de preocupação. Recomenda-se a administração de medicamentos anticoagulantes, como warfarina, para pacientes com pressão arterial alta, e a realização de exames de imagem, como tomografia computadorizada (TC), para avaliar a perfuração de artérias.",
     "guardrail_flags": null,
     "was_rewritten": null,
-    "final_response": "Para prevenir TEV em pacientes acamados, é importante manter a temperatura corporal em um nível moderado. Utilize um aparelho de calor de corpo para manter a temperatura corporal entre 36,5 e 37,5 graus Celsius. Evite a exposição ao sol e a exposição prolongada ao frio.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
+    "final_response": "Para prevenir TEV em pacientes acamados, é importante monitorar a pressão arterial regularmente. A pressão arterial de 140/90 mmHg ou superior deve ser considerada como um sinal de preocupação. Recomenda-se a administração de medicamentos anticoagulantes, como warfarina, para pacientes com pressão arterial alta, e a realização de exames de imagem, como tomografia computadorizada (TC), para avaliar a perfuração de artérias.\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*",
     "alerts_emitted": [],
     "errors": [],
     "node_trace": [
       {
         "node": "input_guardrail_check",
-        "timestamp": "2026-05-31T23:46:06",
+        "timestamp": "2026-06-01T21:36:07",
         "latency_s": 0.0,
         "summary": "nenhum disparo",
         "error": null
       },
       {
         "node": "classify_intent",
-        "timestamp": "2026-05-31T23:46:06",
+        "timestamp": "2026-06-01T21:36:07",
         "latency_s": 0.0,
         "summary": "clinica (kw='paciente')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-31T23:46:07",
-        "latency_s": 0.4858,
+        "timestamp": "2026-06-01T21:36:07",
+        "latency_s": 0.5838,
         "summary": "raw='baixa' → baixa",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-31T23:46:07",
+        "timestamp": "2026-06-01T21:36:07",
         "latency_s": 0.0,
         "summary": "skip (sem patient_id)",
         "error": null
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-31T23:46:07",
+        "timestamp": "2026-06-01T21:36:07",
         "latency_s": 0.0,
         "summary": "skip (sem patient_id)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-31T23:46:07",
-        "latency_s": 0.0186,
+        "timestamp": "2026-06-01T21:36:07",
+        "latency_s": 0.0355,
         "summary": "0 chunk(s), scores=[]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-31T23:46:09",
-        "latency_s": 2.3003,
-        "summary": "270 chars: 'Para prevenir TEV em pacientes acamados, é importante manter a temperatura corpo'",
+        "timestamp": "2026-06-01T21:36:11",
+        "latency_s": 3.7621,
+        "summary": "426 chars: 'Para prevenir TEV em pacientes acamados, é importante monitorar a pressão arteri'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-31T23:46:09",
-        "latency_s": 0.0002,
+        "timestamp": "2026-06-01T21:36:11",
+        "latency_s": 0.0028,
         "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-31T23:46:09",
+        "timestamp": "2026-06-01T21:36:11",
         "latency_s": 0.0,
         "summary": "no-op (urgency=baixa)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-31T23:46:09",
+        "timestamp": "2026-06-01T21:36:11",
         "latency_s": 0.0,
-        "summary": "final=351 chars",
+        "summary": "final=507 chars",
         "error": null
       }
     ]

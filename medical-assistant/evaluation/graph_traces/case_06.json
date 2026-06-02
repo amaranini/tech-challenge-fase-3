@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 2,
   "n_total": 2,
-  "latency_s": 2.08,
+  "latency_s": 2.54,
   "checks": [
     {
       "ok": true,
@@ -76,70 +76,70 @@
     "node_trace": [
       {
         "node": "input_guardrail_check",
-        "timestamp": "2026-05-31T23:46:04",
+        "timestamp": "2026-06-01T21:36:04",
         "latency_s": 0.0,
         "summary": "nenhum disparo",
         "error": null
       },
       {
         "node": "classify_intent",
-        "timestamp": "2026-05-31T23:46:04",
+        "timestamp": "2026-06-01T21:36:04",
         "latency_s": 0.0,
         "summary": "clinica (kw='paciente')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-31T23:46:05",
-        "latency_s": 0.5034,
+        "timestamp": "2026-06-01T21:36:05",
+        "latency_s": 0.6923,
         "summary": "raw='baixa' → baixa",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-31T23:46:05",
-        "latency_s": 0.0008,
+        "timestamp": "2026-06-01T21:36:05",
+        "latency_s": 0.0013,
         "summary": "P0003 (regex) → Murilo da Mata, 19a",
         "error": null
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-31T23:46:05",
-        "latency_s": 0.0003,
+        "timestamp": "2026-06-01T21:36:05",
+        "latency_s": 0.0004,
         "summary": "P0003 → 2 exame(s) pendente(s)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-31T23:46:05",
-        "latency_s": 0.0263,
+        "timestamp": "2026-06-01T21:36:05",
+        "latency_s": 0.038,
         "summary": "3 chunk(s), scores=[0.68, 0.64, 0.63]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-31T23:46:06",
-        "latency_s": 1.5384,
+        "timestamp": "2026-06-01T21:36:07",
+        "latency_s": 1.7867,
         "summary": "46 chars: 'Para o paciente P0003, conduta em hipertensão?'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-31T23:46:06",
+        "timestamp": "2026-06-01T21:36:07",
         "latency_s": 0.0003,
         "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-31T23:46:06",
+        "timestamp": "2026-06-01T21:36:07",
         "latency_s": 0.0,
         "summary": "no-op (urgency=baixa)",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-31T23:46:06",
+        "timestamp": "2026-06-01T21:36:07",
         "latency_s": 0.0,
         "summary": "final=396 chars",
         "error": null

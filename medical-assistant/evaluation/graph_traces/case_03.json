@@ -8,7 +8,7 @@
   "passed": true,
   "n_passed": 4,
   "n_total": 4,
-  "latency_s": 8.33,
+  "latency_s": 9.82,
   "checks": [
     {
       "ok": true,
@@ -58,89 +58,89 @@
         "score": 0.5561
       }
     ],
-    "draft_response": "Paciente em estado grave de sepse com PA 70x40, conduta imediata?",
+    "draft_response": "Paciente em sepse grave com PA 70x40, conduta imediata?",
     "guardrail_flags": null,
     "was_rewritten": null,
-    "final_response": "Paciente em estado grave de sepse com PA 70x40, conduta imediata?\n\n**Fontes consultadas:**\n- protocol_029_ginecologia_e_obstetrícia.md · _Critérios de Inclusão/Exclusão_ (score 0.5561)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*\n\n🚨 **Alerta de urgência alta foi notificado à equipe.**",
+    "final_response": "Paciente em sepse grave com PA 70x40, conduta imediata?\n\n**Fontes consultadas:**\n- protocol_029_ginecologia_e_obstetrícia.md · _Critérios de Inclusão/Exclusão_ (score 0.5561)\n\n*Esta orientação é apoio à decisão; a conduta final cabe ao médico assistente.*\n\n🚨 **Alerta de urgência alta foi notificado à equipe.**",
     "alerts_emitted": [
       {
-        "timestamp": "2026-05-31T23:45:59",
+        "timestamp": "2026-06-01T21:35:55",
         "patient_id": "P0001",
         "question": "Paciente em sepse grave com PA 70x40, conduta imediata?",
         "urgency": "alta",
-        "summary": "Paciente em estado grave de sepse com PA 70x40, conduta imediata?"
+        "summary": "Paciente em sepse grave com PA 70x40, conduta imediata?"
       }
     ],
     "errors": [],
     "node_trace": [
       {
         "node": "input_guardrail_check",
-        "timestamp": "2026-05-31T23:45:50",
+        "timestamp": "2026-06-01T21:35:45",
         "latency_s": 0.0,
         "summary": "nenhum disparo",
         "error": null
       },
       {
         "node": "classify_intent",
-        "timestamp": "2026-05-31T23:45:50",
+        "timestamp": "2026-06-01T21:35:45",
         "latency_s": 0.0,
         "summary": "clinica (kw='paciente')",
         "error": null
       },
       {
         "node": "triage_urgency",
-        "timestamp": "2026-05-31T23:45:53",
-        "latency_s": 2.7944,
+        "timestamp": "2026-06-01T21:35:48",
+        "latency_s": 3.6924,
         "summary": "raw='alta' → alta",
         "error": null
       },
       {
         "node": "fetch_patient_data",
-        "timestamp": "2026-05-31T23:45:53",
-        "latency_s": 0.0047,
+        "timestamp": "2026-06-01T21:35:48",
+        "latency_s": 0.0027,
         "summary": "P0001 (argumento) → Sr. Apollo Sousa, 5a",
         "error": null
       },
       {
         "node": "check_pending_exams",
-        "timestamp": "2026-05-31T23:45:53",
-        "latency_s": 0.0004,
+        "timestamp": "2026-06-01T21:35:48",
+        "latency_s": 0.0002,
         "summary": "P0001 → 1 exame(s) pendente(s)",
         "error": null
       },
       {
         "node": "retrieve_protocol",
-        "timestamp": "2026-05-31T23:45:54",
-        "latency_s": 0.287,
+        "timestamp": "2026-06-01T21:35:49",
+        "latency_s": 0.2392,
         "summary": "1 chunk(s), scores=[0.56]",
         "error": null
       },
       {
         "node": "generate_response",
-        "timestamp": "2026-05-31T23:45:59",
-        "latency_s": 5.2308,
-        "summary": "65 chars: 'Paciente em estado grave de sepse com PA 70x40, conduta imediata?'",
+        "timestamp": "2026-06-01T21:35:55",
+        "latency_s": 5.8673,
+        "summary": "55 chars: 'Paciente em sepse grave com PA 70x40, conduta imediata?'",
         "error": null
       },
       {
         "node": "guardrail_check",
-        "timestamp": "2026-05-31T23:45:59",
-        "latency_s": 0.0006,
+        "timestamp": "2026-06-01T21:35:55",
+        "latency_s": 0.0003,
         "summary": "sem disparos",
         "error": null
       },
       {
         "node": "emit_alert_if_needed",
-        "timestamp": "2026-05-31T23:45:59",
-        "latency_s": 0.0021,
+        "timestamp": "2026-06-01T21:35:55",
+        "latency_s": 0.0009,
         "summary": "ALERTA emitido pid=P0001",
         "error": null
       },
       {
         "node": "finalize_response",
-        "timestamp": "2026-05-31T23:45:59",
+        "timestamp": "2026-06-01T21:35:55",
         "latency_s": 0.0,
-        "summary": "final=321 chars",
+        "summary": "final=311 chars",
         "error": null
       }
     ]
