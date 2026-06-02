@@ -75,6 +75,12 @@ logging_/logs/*
 # Schema documentado em assistant/graph_state.py (AlertEntry, NodeTraceEntry).
 logging_/*.jsonl
 
+# Audit DB do assistente (Fase 6, Bloco 2) — SQLite + WAL.
+# Schema documentado em assistant/audit/schema.py.
+logging_/audit.db
+logging_/audit.db-shm
+logging_/audit.db-wal
+
 # ---- IDE / Editores ----
 .vscode/
 .idea/

@@ -885,4 +885,63 @@ campos — guardrail_check e rewrite_node ESCREVEM por replace, não acumulam.
 `assistant/graph_nodes.py:make_rewrite_node`. Avaliação reprodutível
 em `evaluation/eval_guardrails.py`.
 
+---
+
+## 23. Trilha de auditoria em SQLite local (Fase 6, Bloco 2)
+
+**Decisão**: cada execução do grafo grava em `logging_/audit.db` (SQLite,
+4 tabelas relacionadas via FK em `request_id`). Escrita é DEFENSIVA —
+falha do writer NÃO interrompe a execução do grafo.
+
+**Schema (4 tabelas + 1 de versionamento)**:
+
+| Tabela | Conteúdo |
+|---|---|
+| `interactions` | 1 linha por chamada de `run_medical_graph` — question, paciente, intent, urgency, response, latência, state JSON |
+| `guardrail_events` | 1 linha POR GUARDRAIL POR INTERAÇÃO (triggered ou não) — auditoria completa |
+| `alerts` | 1 linha por alerta de urgência alta emitido; coluna `acknowledged` reservada pra fluxo da Fase 7 |
+| `rag_retrievals` | 1 linha por execução do nó `retrieve_protocol` — query + top-K com scores |
+| `schema_meta` | Versão do schema (atual: v1) — facilita migrações futuras |
+
+**Por que SQLite**:
+- Zero dependências externas — roda em qualquer Mac/Linux/Windows.
+- Transacional: writer faz tudo numa transação `with conn:` (`interactions`
+  + N `guardrail_events` + M `alerts` + 1 `rag_retrievals`).
+- Queryável via CLI (`sqlite3 logging_/audit.db ...`) E via Python.
+- WAL mode habilitado pelo `init_db` permite reads concorrentes — a CLI
+  pode consultar enquanto o grafo grava.
+- Migração pra Postgres é trivial quando crescer (volume institucional
+  real provavelmente exigirá isso na Fase 7).
+
+**Defensividade**:
+- `AuditWriter.write_interaction` envolve tudo num `try/except Exception` que
+  loga mas não propaga.
+- `run_medical_graph` chama o writer dentro de mais um `try/except` —
+  duas camadas defensivas, porque auditoria não pode quebrar o assistente.
+- Lazy init do DB: `_ensure_db` é chamado na 1ª escrita — testes rodam
+  sem tocar o DB de produção.
+
+**state_snapshot**:
+- Grava o `MedicalState` completo como JSON na coluna `state_snapshot`.
+- Texto dos `rag_chunks` é OMITIDO (já está em `rag_retrievals` como metadados).
+- Limite de 50KB por snapshot — trunca se exceder.
+
+**Quais writes ficam fora**:
+- `node_trace` por nó (vai como parte do `state_snapshot`, não tabela própria
+  — nó-a-nó não é eixo de query útil pra audit).
+- Logs do `logger` (continuam indo pra stderr / stream do harness).
+
+**CLI** (`uv run python -m assistant.audit`):
+- `list [--last N]`, `show <id>`, `filter [...]`, `stats`, `tail`,
+  `export <id> [--out FILE]`
+- Output bonito via `rich` (já no projeto).
+- Modo `tail` faz polling com cursor `id > last_seen`, interval default 2s.
+
+**.gitignore**: `logging_/audit.db*` (DB + .shm + .wal do WAL) — schema é
+reprodutível via `assistant/audit/schema.py:init_db()`; conteúdo é
+runtime, não versionar.
+
+**Onde**: `assistant/audit/{schema,writer,reader,cli}.py`, integração em
+`assistant/graph.py:run_medical_graph`.
+
 

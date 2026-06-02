@@ -226,7 +226,9 @@ def run_medical_graph(
     """Roda o grafo numa pergunta e devolve o State final.
 
     Lazy-build do grafo (singleton de módulo). Grava trace estruturado em
-    logging_/graph_traces.jsonl (1 linha por execução completa).
+    logging_/graph_traces.jsonl (1 linha por execução completa) e também
+    no audit DB (Fase 6, Bloco 2) — defensivamente: se o writer falhar,
+    a execução do grafo NÃO é afetada.
     """
     graph = _get_graph()
     state_in = initial_state(question=question, patient_id=patient_id)
@@ -235,6 +237,15 @@ def run_medical_graph(
     total = time.monotonic() - t0
     logger.info("Grafo executado em %.2fs (%d nós no trace)",
                 total, len(state_out.get("node_trace", [])))
+
+    # ─── Audit DB (Fase 6, Bloco 2) ────────────────────────────────────
+    # Escrita defensiva: writer.write_interaction loga exceções mas nunca
+    # propaga, então mesmo se o DB tiver problema o usuário recebe a resposta.
+    try:
+        from assistant.audit.writer import AuditWriter
+        AuditWriter().write_interaction(state_out, latency_ms=int(total * 1000))
+    except Exception as e:  # noqa: BLE001 — última camada defensiva
+        logger.warning("Audit writer indisponível: %s", e)
 
     # Persistência do trace
     try:
