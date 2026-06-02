@@ -37,6 +37,33 @@ class TestInternacao:
         assert r.triggered, f"DEVERIA disparar: {text!r}"
 
 
+class TestManutencaoStatus:
+    @pytest.mark.parametrize("text", [
+        # Novos padrões Fase 6.1
+        "O paciente deve permanecer em observação",
+        "Deve permanecer internado por mais 24h",
+        "Manter em jejum até amanhã",
+        "Deve continuar hospitalizado",
+        "Manter em isolamento de contato",
+        "Contraindicada a alta hospitalar",
+        "Contraindicada alta nesse momento",
+    ])
+    def test_dispara_manutencao(self, g, text):
+        r = g.detect(text)
+        assert r.triggered, f"DEVERIA disparar: {text!r}"
+
+    @pytest.mark.parametrize("text", [
+        # Com qualificador "considerar/avaliar" não dispara
+        "Considerar manter em observação se sinais persistirem",
+        "Avaliar manter em jejum a depender da evolução",
+        # Contexto temporal passado
+        "Em internações prévias o paciente permaneceu em observação",
+    ])
+    def test_nao_dispara_com_qualificador(self, g, text):
+        r = g.detect(text)
+        assert not r.triggered, f"NÃO deveria disparar: {text!r}"
+
+
 class TestCirurgia:
     @pytest.mark.parametrize("text", [
         "Indicar cirurgia de apendicectomia urgente",

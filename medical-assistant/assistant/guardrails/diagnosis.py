@@ -30,6 +30,22 @@ import re
 from assistant.guardrails.base import Guardrail, GuardrailResult
 
 # Cada padrão = uma forma de afirmar diagnóstico com certeza.
+# Lista deliberadamente curta de DOENÇAS GRAVES onde "o paciente tem X" é
+# quase sempre afirmação diagnóstica do modelo (não citação de histórico).
+# Risco baixo de FP — essas palavras raramente aparecem em prontuário sem
+# qualificação. Mantemos lista MÍNIMA pra evitar over-detection.
+_DOENCAS_GRAVES = (
+    "câncer", "cancer", "tumor", "neoplasia", "metástase", "metastase",
+    "leucemia", "linfoma", "melanoma",
+    "aids", "hiv",
+    "sepse", "choque séptico", "choque septico",
+    "iam", "infarto agudo", "avc", "tep", "embolia pulmonar",
+    "cirrose", "insuficiência renal", "insuficiencia renal",
+    "insuficiência hepática", "insuficiencia hepatica",
+    "insuficiência cardíaca", "insuficiencia cardiaca",
+    "meningite", "endocardite",
+)
+
 _PATTERNS: tuple[tuple[str, re.Pattern], ...] = (
     ("diagnostico_definitivo",
      re.compile(r"\bdiagn[óo]stico\s+(definitivo|fechado|certo|conclusivo)\s+(é|de)\b",
@@ -45,6 +61,36 @@ _PATTERNS: tuple[tuple[str, re.Pattern], ...] = (
      re.compile(r"\bdefinitivamente\s+(é|tem|trata-se)\b", re.IGNORECASE)),
     ("sem_duvida",
      re.compile(r"\bsem\s+dúvida\s+(é|tem|trata-se)\b", re.IGNORECASE)),
+    # NOVO: "paciente tem [doença grave]" — afirmação categórica direta.
+    # Aceita até 2 palavras intermediárias (artigos, advérbios) entre verbo
+    # e doença. Ex: "tem definitivamente câncer", "tem uma sepse grave".
+    ("paciente_tem_doenca_grave",
+     re.compile(
+         r"\b(paciente\s+)?(tem|apresenta)\s+(\w+\s+){0,2}(?:" +
+         "|".join(re.escape(d) for d in _DOENCAS_GRAVES) +
+         r")\b",
+         re.IGNORECASE,
+     )),
+    # NOVO: "diagnóstico [adjetivo]* confirmado de [doença]"
+    # Pega "diagnóstico confirmado de X", "diagnóstico histopatológico
+    # confirmado de X", etc — afirmação de exame confirmatório que o
+    # modelo pode estar inventando.
+    ("diagnostico_confirmado",
+     re.compile(
+         r"\bdiagn[óo]stico\s+(\w+\s+){0,2}confirmado\s+de\b",
+         re.IGNORECASE,
+     )),
+    # NOVO: "paciente com [doença grave]" — descrição categórica do paciente,
+    # comum em alucinações onde o modelo aceita a premissa do usuário.
+    # Exclui qualificadores ("suspeita de", "hipótese de", "histórico de").
+    ("paciente_com_doenca_grave",
+     re.compile(
+         r"\b(paciente|caso)\s+com\s+"
+         r"(?!suspeita\s+|hipótese\s+|histórico\s+|antecedente\s+|risco\s+|possível\s+)"
+         r"(diagnóstico\s+\w*\s*confirmado\s+de\s+|diagnóstico\s+de\s+)?"
+         r"(?:" + "|".join(re.escape(d) for d in _DOENCAS_GRAVES) + r")\b",
+         re.IGNORECASE,
+     )),
 )
 
 

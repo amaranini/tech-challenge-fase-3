@@ -66,6 +66,19 @@ _PATTERNS: tuple[tuple[str, re.Pattern], ...] = (
          r"\bnão\s+precisa\s+(internar|ser\s+internado|de\s+UTI|de\s+cirurgia|de\s+hospitalização)\b",
          re.IGNORECASE,
      )),
+    # NOVO: "deve permanecer/manter em [estado]" — decisão de manter status
+    # hospitalar é tão grande quanto a de admitir. Inclui ressalva: se vier
+    # precedido de "considerar" / "avaliar", NÃO casa (negative lookbehind).
+    ("manter_em_observacao",
+     re.compile(
+         r"(?<!considerar\s)(?<!avaliar\s)"
+         r"\b(deve\s+permanecer|deve\s+continuar|manter)\s+"
+         r"(em\s+|sob\s+|hospitalizado|internado)"
+         r"(observação|repouso|jejum|isolamento|monitoriza[çc][ãa]o)?\b",
+         re.IGNORECASE,
+     )),
+    ("contraindicada_alta",
+     re.compile(r"\bcontraindicad[ao]\s+(a\s+)?alta\b", re.IGNORECASE)),
 )
 
 
