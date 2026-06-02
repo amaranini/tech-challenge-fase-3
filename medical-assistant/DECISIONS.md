@@ -944,4 +944,76 @@ runtime, não versionar.
 **Onde**: `assistant/audit/{schema,writer,reader,cli}.py`, integração em
 `assistant/graph.py:run_medical_graph`.
 
+---
+
+## 24. Explainability como decomposição do state, NÃO o LLM se explicando (Fase 6, Bloco 3)
+
+**Decisão**: a ficha de raciocínio (`/why` no demo, função
+`build_explanation(state) -> dict` em `assistant/explainability.py`) é uma
+**função pura** sobre o `MedicalState` final. NÃO chama LLM.
+
+**O que a ficha contém**:
+
+```python
+{
+    "request_id": "uuid",
+    "classification": {"intent": "clinica", "urgency": "alta", "bypass_detected": False},
+    "patient_used": {"id": "P0001", "fields_consulted": [...]} | None,
+    "exams_consulted": [...] | None,
+    "sources": [{"file": ..., "section": ..., "score": ...}, ...],
+    "no_sources_reason": "Nenhum chunk passou do threshold" | None,
+    "guardrails_triggered": [{"name": ..., "level": ..., "action_taken": ...}],
+    "was_rewritten": bool,
+    "alerts_emitted": [...],
+    "errors": [...],
+    "model_info": {"base": "Qwen2.5-1.5B-Instruct-bf16", "adapter": "adapters"},
+    "latency_breakdown_s": {node: latency_seconds, ...},
+    "total_latency_s": float,
+}
+```
+
+**Por que NÃO pedir ao LLM pra explicar**:
+- O LLM produz texto **plausível**, não **evidência**. "Explique sua resposta"
+  pode gerar uma justificativa que parece convincente mas inventa fontes
+  ou raciocínios que não existiram. Em contexto clínico isso é
+  inaceitável — o assistente parece estar oferecendo transparência mas
+  na verdade está produzindo confabulação.
+- Custo: chamar o LLM adiciona latência ao endpoint de explicação.
+- O `state` do grafo é o oráculo da verdade — basta enumerar.
+- Auditabilidade: a função é determinística. Mesmo state → mesma ficha.
+  Não há variação por temperatura.
+
+**Por que é uma função PURA**:
+- Sem efeitos colaterais (não escreve em DB, não loga).
+- Sem dependências externas em runtime (só importa `MODEL_PATH` e
+  `ADAPTER_PATH` do config, que são constantes lidas do `.env`).
+- Determinística: chamar 100 vezes com o mesmo state retorna 100 dicts iguais.
+- Trivialmente testável: 20 testes unitários em ~1.7s sem mocks.
+
+**Decisão de design adicional — `no_sources_reason`**:
+Quando `sources == []`, a ficha distingue dois cenários:
+- "RAG não foi executado neste caminho (refuse ou bypass)" — quando o
+  `retrieve_protocol` não aparece no `node_trace`.
+- "Nenhum chunk passou do threshold do RAG (0.55)" — quando o nó rodou
+  mas filtrou tudo.
+
+Pro usuário do `/why` essa distinção é importante: a primeira é "não tentei",
+a segunda é "tentei e não encontrei".
+
+**Decisão — campos consultados do paciente**:
+`patient_used.fields_consulted` lista os campos não-vazios do
+`patient_data` no momento da geração. Esta é uma heurística — assume
+que o `generate_response` colocou todos os campos não-vazios no prompt
+(o que é verdade, dado o template em `graph_prompts.py:GENERATE_USER_TEMPLATE`).
+Se o template mudar, esse mapeamento precisa ser revisado.
+
+**Integração com demo**:
+- `/why` → painéis essenciais (classificação, paciente, fontes, guardrails, alertas)
+- `/why detail` → adiciona exames pendentes, latências (com % do total
+  ordenado por gargalo), modelo, erros não-fatais
+
+**Onde**: `assistant/explainability.py`, integração em
+`assistant/demo_graph.py` (comandos `/why` e `/why detail`). Testes em
+`assistant/test_explainability.py` (20 casos).
+
 

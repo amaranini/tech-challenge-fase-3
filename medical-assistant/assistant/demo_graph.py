@@ -7,11 +7,13 @@ Diferenças do `demo_chat.py` (Fase 4):
 - `demo_chat.py` continua existindo como referência da Fase 4.
 
 Comandos:
-    /trace      tabela com os nós executados na última pergunta
-    /state      JSON com o estado completo da última pergunta
-    /alerts     alertas emitidos NESTA sessão (gravados em alerts.jsonl)
-    /clear      limpa a tela / último trace
-    /exit       sai
+    /trace          tabela com os nós executados na última pergunta
+    /state          JSON com o estado completo da última pergunta
+    /alerts         alertas emitidos NESTA sessão (gravados em alerts.jsonl)
+    /why            ficha de raciocínio (Fase 6, Bloco 3) — resumo
+    /why detail     ficha completa (com latências, exames, modelo, erros)
+    /clear          limpa a tela / último trace
+    /exit           sai
 
 Uso:
     uv run python assistant/demo_graph.py
@@ -103,7 +105,7 @@ def _print_banner() -> None:
             "[bold cyan]Assistente clínico — Demo Fase 5 (LangGraph)[/]\n"
             "Qwen2.5-1.5B + LoRA + LangGraph (9 nós) + RAG + SQLite\n"
             "[dim]Cada nó imprime quando executa. Veja /trace para detalhes.[/]\n\n"
-            "[yellow]Comandos:[/] /trace /state /alerts /clear /exit\n"
+            "[yellow]Comandos:[/] /trace /state /alerts /why [detail] /clear /exit\n"
             "[dim]Dica: para incluir paciente, mencione o ID na pergunta (ex: P0001).[/]",
             border_style="cyan",
         )
@@ -240,6 +242,18 @@ def main() -> int:
             continue
         if cmd_low == "/alerts":
             _render_session_alerts(session_start)
+            continue
+        if cmd_low == "/why" or cmd_low.startswith("/why "):
+            if not last_state:
+                console.print("[dim]Faça uma pergunta primeiro.[/]")
+                continue
+            from assistant.explainability import (
+                build_explanation,
+                format_explanation,
+            )
+            detail = cmd_low.startswith("/why detail")
+            exp = build_explanation(last_state)
+            console.print(format_explanation(exp, detail=detail))
             continue
 
         # ─── Inferência ────────────────────────────────────────────────────
