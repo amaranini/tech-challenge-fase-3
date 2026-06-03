@@ -11,11 +11,13 @@ Esta pasta contém:
 - **Roteador determinístico + chain** (Fase 4) — regex decide o que
   acionar; `build_medical_chain` orquestra tudo via LangChain. (Mantida
   como referência; o orquestrador oficial agora é o grafo.)
-- **Grafo LangGraph** (Fase 5) — 9 nós + refuse + rewrite, com estado
-  compartilhado, logging por nó e diagrama exportável. `run_medical_graph`
-  é a interface principal.
+- **Grafo LangGraph** (Fase 5, atualizado na Fase 6) — **10 nós** + refuse
+  + rewrite, com estado compartilhado, logging por nó e diagrama exportável.
+  `run_medical_graph(question, patient_id, doctor_id)` é a interface
+  principal — o `doctor_id` (Fase 7) é opcional e vai pro audit DB.
 - **Guardrails unificados** (Fase 6, Bloco 1) — 5 categorias com
-  registry. Novo Nó 0 (input-side bypass detection) + Nó 7 refatorado.
+  registry. Novo Nó 0 (input-side bypass detection) + Nó 7 refatorado
+  com reescrita combinada quando vários `block` disparam.
 - **Audit DB** (Fase 6, Bloco 2) — SQLite com 4 tabelas (interactions,
   guardrail_events, alerts, rag_retrievals). CLI com `rich` pra consultas.
 - **Explainability** (Fase 6, Bloco 3) — ficha de raciocínio derivada
@@ -39,12 +41,12 @@ Esta pasta contém:
 | `test_llm.py` | 8 unit + 2 slow (modelo real) |
 | `test_router.py` | 8 unit do roteador |
 | `test_chain.py` | 6 integração com mocks |
-| `test_rag.py` | 4 do retriever (pulam se índice não existir) |
+| `test_rag.py` | 6 do retriever (pulam se índice não existir) |
 | `demo_chat.py` | CLI Fase 4 (chain) com `/sources`, `/no-rag` |
 | `graph_state.py` | **Fase 5**: `MedicalState` TypedDict + reducers acumulativos |
 | `graph_prompts.py` | **Fase 5**: prompts dos nós (triage, generate, rewrite, refuse) |
 | `intent_classifier.py` | **Fase 5**: classificador determinístico do Nó 1 (keyword) |
-| `graph_nodes.py` | **Fase 5**: 9 nós + refuse + rewrite, todos defensivos |
+| `graph_nodes.py` | **Fase 5/6**: 10 nós + refuse + rewrite, todos defensivos (try/except + fallback) |
 | `graph.py` | **Fase 5**: `build_graph()`, `run_medical_graph()`, `export_diagram()` |
 | `demo_graph.py` | **Fase 5/6**: CLI do grafo com `/trace`, `/state`, `/alerts`, `/why [detail]` |
 | `test_graph_nodes.py` | **Fase 5/6**: unit tests do grafo (~46 testes) |
@@ -139,12 +141,13 @@ uv run python -m assistant.tools.patient_records P0001    # encontra
 uv run python -m assistant.tools.patient_records P9999    # gracefully
 ```
 
-## Fluxo automatizado (LangGraph — Fase 5)
+## Fluxo automatizado (LangGraph — Fase 5/6)
 
-A Fase 5 substitui o orquestrador da Fase 4 por um grafo de estado com
-9 nós + 2 auxiliares (refuse, rewrite). O grafo é a interface principal
-do assistente agora; a chain LangChain da Fase 4 continua existindo como
-referência.
+A Fase 5 substituiu o orquestrador da Fase 4 por um grafo de estado.
+A Fase 6 adicionou o Nó 0 (input guardrail). O grafo atual tem **10 nós
++ 2 auxiliares** (refuse, rewrite) e é a interface principal do
+assistente; a chain LangChain da Fase 4 continua existindo como
+referência histórica.
 
 ### Smoke test e diagrama
 
@@ -166,12 +169,13 @@ from assistant.graph import run_medical_graph
 state = run_medical_graph(
     question="Paciente em sepse grave com PA 70x40, conduta?",
     patient_id="P0001",
+    doctor_id="DR_SILVA",  # opcional — Fase 7, grava no audit DB
 )
 
 print(state["final_response"])
 print("Intent:", state["intent"])           # clinica
 print("Urgency:", state["urgency"])         # alta
-print("Trace:", len(state["node_trace"]))   # ~9
+print("Trace:", len(state["node_trace"]))   # ~10
 print("Alertas emitidos:", state["alerts_emitted"])
 ```
 
@@ -184,6 +188,7 @@ uv run python assistant/demo_graph.py
 A cada pergunta, cada nó aparece executando em tempo real:
 
 ```
+🛡️ input_guardrail_check sem bypass
 🎯 classify_intent       clinica (kw='paciente')
 🚦 triage_urgency        raw='alta' → alta
 👤 fetch_patient_data    P0001 (argumento) → Apollo Sousa, 5a
@@ -198,6 +203,8 @@ A cada pergunta, cada nó aparece executando em tempo real:
 Comandos:
 - `/trace` — tabela com nós executados na última pergunta
 - `/state` — JSON do estado completo
+- `/why` — ficha de raciocínio (explainability) — painéis essenciais
+- `/why detail` — explainability detalhada (latências por nó, modelo, erros)
 - `/alerts` — alertas emitidos NESTA sessão
 - `/clear` — limpa a tela
 - `/exit` — sai
@@ -268,7 +275,7 @@ Cada execução do grafo grava em `logging_/audit.db` (SQLite + WAL):
 - `interactions` — 1 linha por chamada de `run_medical_graph`
 - `guardrail_events` — 1 linha por guardrail por interação (triggered ou não)
 - `alerts` — 1 linha por alerta de urgência alta; coluna `acknowledged`
-  reservada pra Fase 7
+  ainda não tem fluxo de UI pra marcar (reservada pra evolução futura)
 - `rag_retrievals` — 1 linha por execução de `retrieve_protocol`
 
 **Writer DEFENSIVO**: exceções são logadas mas NUNCA propagam — auditoria
@@ -372,18 +379,23 @@ uv run pytest assistant/ -v -m slow         # 5 lentos: carrega modelo (~30s)
 uv run pytest assistant/ -v                 # todos
 ```
 
-Quebra dos testes:
-- **Fase 3-4**: ~26 testes (llm, router, chain, rag)
+Quebra dos testes (do pacote `assistant/`):
+- **Fase 3-4**: 30 testes (llm 10, router 8, chain 6, rag 6)
 - **Fase 5**: 46 testes do grafo + 3 slow de integração
 - **Fase 6, Bloco 1**: 165 testes dos 5 guardrails + registry
-- **Fase 6, Bloco 2**: 29 testes do audit (writer + reader + schema)
+- **Fase 6, Bloco 2**: 29 testes do audit (writer + reader + schema v2)
 - **Fase 6, Bloco 3**: 20 testes da explainability
 
+> A API (Fase 7) tem mais 14 testes em [`../api/test_endpoints.py`](../api/test_endpoints.py)
+> — total geral do projeto: ~302 testes rápidos + 5 slow.
+
 Documentação adicional:
+- [arquitetura da Fase 4](../docs/arquitetura_fase4.md) — RAG + chain
 - [arquitetura da Fase 5](../docs/arquitetura_fase5.md) — grafo LangGraph original
 - [arquitetura da Fase 6](../docs/arquitetura_fase6.md) — guardrails + audit + explainability
 - [diagrama do grafo (versão Fase 6)](../docs/langgraph_flow.md)
-- [`../DECISIONS.md`](../DECISIONS.md) — log de decisões técnicas (#22-24 são da Fase 6)
+- [`../api/README.md`](../api/README.md) e [`../ui/README.md`](../ui/README.md) — camada de exposição da Fase 7
+- [`../DECISIONS.md`](../DECISIONS.md) — log de decisões técnicas (#22-24 são da Fase 6, #25 é da Fase 7)
 
 > Os 4 testes do retriever (`test_rag.py`) pulam automaticamente se o
 > índice em `assistant/data/chroma_db/` não tiver sido construído.
@@ -402,6 +414,9 @@ Documentação adicional:
 - **Erro de adapter**: se `adapter_path` foi informado mas o caminho não
   existe no filesystem, `_ensure_loaded()` levanta `FileNotFoundError`
   com instrução em PT-BR de como resolver.
-- **Não implementado ainda**: streaming (`_stream`), async
-  (`_agenerate`/`_astream`). Podem ser adicionados na Fase 6 (UI) com
-  `mlx_lm.stream_generate` sem refazer a classe.
+- **Não implementado**: streaming (`_stream`), async
+  (`_agenerate`/`_astream`). A Fase 7 (UI Streamlit + API FastAPI) ficou
+  síncrona — latência típica de 1-10s por consulta é aceitável pra demo.
+  Streaming exigiria expor SSE/WebSocket na API e mudar o consumo na UI;
+  fora do escopo da fase. Pode ser feito sem refazer a classe usando
+  `mlx_lm.stream_generate`.
