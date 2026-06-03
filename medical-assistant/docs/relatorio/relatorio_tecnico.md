@@ -2,7 +2,7 @@
 title: "Assistente Médico com Fine-tuning de LLM e Orquestração LangChain"
 subtitle: "Tech Challenge Fase 3 — Pós-Graduação em IA para Devs"
 author: "Ana Luzia Maranini"
-date: "Junho de 2026"
+date: "Maio de 2026"
 lang: pt-BR
 toc: true
 toc-depth: 2
