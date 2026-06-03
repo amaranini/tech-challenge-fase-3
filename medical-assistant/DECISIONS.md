@@ -1017,3 +1017,70 @@ Se o template mudar, esse mapeamento precisa ser revisado.
 `assistant/test_explainability.py` (20 casos).
 
 
+
+## 25. API HTTP + UI Streamlit como camada de exposição (Fase 7)
+
+**Contexto**: o sistema já tinha grafo, guardrails, audit e explainability
+funcionando via CLI (`demo_graph.py`). Pra gravação do vídeo de 15 min
+do Tech Challenge, precisava de uma camada visual que demonstrasse o
+sistema **como serviço** (não só linha de comando).
+
+**Decisão — duas camadas separadas**:
+- `api/` FastAPI expõe o grafo via REST (porta 8000)
+- `ui/` Streamlit consome a API via HTTP (porta 8501)
+
+**Por que separar e não fazer Streamlit chamando o grafo direto**:
+1. Simula deployment real (UI pode rodar em outra máquina/container).
+2. Documentação automática via Swagger (`/docs`) — ótimo pro vídeo.
+3. Permite trocar UI sem mexer no servidor (e vice-versa).
+4. Streamlit chamando LangGraph direto travaria a thread em consultas longas.
+5. Audit DB e cache do grafo ficam no servidor — UI fica stateless.
+
+**Decisão — autenticação simulada via header `X-Doctor-Id`**:
+- String livre (ex: `DR_SILVA`). Sem validação de identidade.
+- Gravada em `interactions.doctor_id` (audit DB v2).
+- Por quê: o ponto é DEMONSTRAR rastreabilidade de quem consultou, não
+  implementar OAuth real (fora de escopo nesta fase).
+- Migração v1→v2 via `ALTER TABLE ... ADD COLUMN` idempotente em
+  `init_db()` — DBs antigos sobrevivem sem perda de história.
+
+**Decisão — modelo carrega 1x no startup (lifespan)**:
+- `_get_graph()` chamado no lifespan do FastAPI → singleton aquecido.
+- Requests seguintes: 1-10s (latência só do grafo, não do load).
+- `app.state.skip_warmup=True` permite testes rodarem em ~2s.
+
+**Decisão — UI nunca importa `assistant.*`**:
+- Toda comunicação via `ui/client.py` (httpx wrapper).
+- Wrapper devolve `dict` com chave `error` em vez de levantar exceção —
+  simplifica o código de cada tab.
+- Regra enforced em CI: se `ui/` importar de `assistant/` ou `api/`,
+  isso vira regressão arquitetural.
+
+**Decisão — avisos éticos persistentes**:
+- Banner no topo + footer em cada resposta — visíveis SEMPRE, inclusive
+  em modo apresentação (que aumenta fontes e esconde IDs/traces).
+- CSS usa classes distintas (`ethics-banner`, `ethics-footer`) que NÃO
+  são afetadas pelo `presentation_css()`.
+- Por quê: o sistema é demonstrativo, dados sintéticos. Não pode dar
+  impressão de produto pronto pra clínica real, mesmo no vídeo polido.
+
+**Decisão — script `scripts/run_all.sh` pra demo**:
+- Sobe API, espera health check, sobe UI, mostra URLs.
+- `trap cleanup INT TERM` derruba os dois com Ctrl+C.
+- Logs em `logging_/api.log` e `logging_/ui.log`.
+- Justificativa: durante a gravação, não quero alternar entre dois
+  terminais — 1 comando, tudo no ar.
+
+**Bônus — robustez de path**:
+`assistant/config.py` resolve `ADAPTER_PATH` relativo à raiz do
+projeto (não ao cwd). Antes disso, `uv run uvicorn` falhava se o cwd
+não fosse `medical-assistant/` (rodando do `ui/`, por exemplo).
+
+**Onde**:
+- `api/{__init__,schemas,dependencies,server}.py`
+- `api/test_endpoints.py` (14 testes — grafo mockado via `dependency_overrides`)
+- `ui/{app,client,styles}.py` + `ui/components/{consult,audit,about}_tab.py`
+- `scripts/run_all.sh`
+- `assistant/audit/schema.py` (migração v2)
+- `assistant/tools/patient_records.py:list_patients` (novo)
+- `assistant/graph.py:run_medical_graph` (aceita doctor_id agora)

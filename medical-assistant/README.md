@@ -110,12 +110,43 @@ uv run python evaluation/eval_system_prompt.py
 cat evaluation/comparison_phase3.md
 ```
 
-### Próximas fases (em desenvolvimento)
+### Como rodar a demo completa (Fase 7)
 
-- **Fase 4** — RAG com Chroma + sentence-transformers.
-- **Fase 5** — Agente LangGraph com decisão de rota.
-- **Fase 6** — Guardrails de entrada/saída + log de auditoria.
-- **Fase 7** — API FastAPI + UI Streamlit.
+API HTTP + UI Streamlit no ar simultaneamente. Pensado pro screencast
+do vídeo de 15 min.
+
+```bash
+# Sobe API (porta 8000) e UI (porta 8501) em paralelo.
+# Ctrl+C derruba os dois.
+bash scripts/run_all.sh
+```
+
+Quando ver `✨ Tudo no ar`, abra:
+
+- **UI**: <http://localhost:8501>
+- **API docs**: <http://localhost:8000/docs>
+
+Detalhes da API em [api/README.md](api/README.md) (endpoints, curl
+examples, header `X-Doctor-Id`). Detalhes da UI em
+[ui/README.md](ui/README.md) (sidebar, tabs, modo apresentação, paleta
+de cores).
+
+Para rodar separadamente:
+
+```bash
+# Terminal 1
+uv run uvicorn api.server:app --reload --port 8000
+
+# Terminal 2
+uv run streamlit run ui/app.py
+```
+
+### Histórico das fases
+
+- **Fase 4** ✅ — RAG com Chroma + sentence-transformers.
+- **Fase 5** ✅ — Agente LangGraph com decisão de rota (10 nós).
+- **Fase 6** ✅ — Guardrails de entrada/saída + audit DB + explainability.
+- **Fase 7** ✅ — API FastAPI + UI Streamlit.
 
 ---
 
@@ -136,8 +167,10 @@ medical-assistant/
 │   └── configs/           ← YAMLs com hiperparâmetros do treino (Colab)
 ├── assistant/
 │   └── tools/             ← ferramentas que o agente pode chamar
-├── api/                   ← backend FastAPI
-├── ui/                    ← frontend Streamlit
+├── api/                   ← backend FastAPI (Fase 7)
+├── ui/                    ← frontend Streamlit (Fase 7)
+├── scripts/
+│   └── run_all.sh         ← sobe API + UI em paralelo
 ├── logging_/
 │   └── logs/              ← logs de auditoria (não vai pro git)
 ├── evaluation/            ← scripts de avaliação do modelo
