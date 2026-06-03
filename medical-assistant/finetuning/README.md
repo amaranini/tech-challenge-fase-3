@@ -56,7 +56,8 @@ uv run python finetuning/prepare_mlx_dataset.py
 
 > Copia `data/processed/{train,val,test}.jsonl` → `finetuning/data/{train,valid,test}.jsonl`,
 > renomeando `val → valid` (que é o nome que o mlx-lm exige).
-> Deve mostrar `404 + 50 + 51 = 505 exemplos`.
+> Deve mostrar `406 + 50 + 52 = 508 exemplos` (snapshot atual do dataset
+> em `data/processed/`).
 
 ### 3. Smoke test (10 iters, ~2-3 min) — OBRIGATÓRIO
 
@@ -176,13 +177,22 @@ O modelo fine-tuned deve mostrar:
 
 Estamos fazendo fine-tuning **para ensinar estilo/formato e domínio**
 (jargão médico, estrutura de protocolo/laudo, registro PT-BR clínico) —
-**não** para incutir conhecimento factual.
+**não** para incutir conhecimento factual nem segurança comportamental.
 
-Conhecimento factual entra via **RAG (Retrieval-Augmented Generation)** na
-Fase 4: na hora da consulta, o agente busca o documento relevante na base
-vetorial e o passa como contexto pro modelo, em vez de "memorizar" tudo
-nos pesos. Isso é mais robusto, mais barato, e permite atualizar
-conhecimento sem retreinar.
+A arquitetura final usa **três camadas** complementares:
+
+1. **Fine-tuning (esta fase)** — ensina o modelo a **escrever como médico**
+   (jargão, estrutura, PT-BR técnico). Pesos.
+2. **RAG (Fase 4)** — injeta **conhecimento factual** atualizável (protocolos
+   institucionais) via contexto, na hora da consulta. Sem retreino.
+3. **Guardrails (Fase 6)** — interceptam **comportamentos indesejados**
+   na saída (prescrição direta, diagnóstico definitivo, decisão clínica
+   final). Sem retreino.
+
+Essa separação é deliberada: mudar protocolo institucional → editar `.md`
+e re-indexar (Fase 4). Mudar regras de segurança → editar regex em
+`assistant/guardrails/*.py` (Fase 6). Mudar voz/registro/formato → retreinar
+o adapter (esta fase). Cada eixo evolui no seu ritmo.
 
 ---
 
@@ -191,8 +201,8 @@ conhecimento sem retreinar.
 ### Treino #1 — 2026-05-26 (Fase 2 inicial)
 
 **Setup.** Qwen2.5-1.5B-Instruct-bf16 + LoRA (rank=8, scale=20, dropout=0.05),
-300 iters, batch efetivo 4, LR=5e-5, seq_len=1024. Dataset: 404 train / 50 val /
-51 test. Tempo real de treino: 11min. Perplexity: 7.96 -> 2.62.
+300 iters, batch efetivo 4, LR=5e-5, seq_len=1024. Dataset: 406 train / 50 val /
+52 test. Tempo real de treino: 11min. Perplexity: 7.96 -> 2.62.
 
 **Resultado qualitativo.** O modelo aprendeu bem o formato de
 protocolo/laudo/Q&A e respondeu em PT-BR técnico médico na maioria dos
@@ -244,6 +254,27 @@ o modelo regride para inglês (visível na linha 2 da tabela). Esperado
 para dataset pequeno (~400 exemplos PT-BR) em modelo pré-treinado
 dominado por inglês.
 
-**Próximos treinos.** Quando esse cenário for endereçado, registrar aqui
-o novo treino com data, mudanças no dataset e/ou hiperparâmetros, e o
-resultado nos mesmos 5 prompts-teste de prescrição.
+**Decisão arquitetural (Fase 6) — não retreinar.**
+
+O gap de recusa não foi resolvido com retreino. A decisão foi **mover a
+proteção pra outra camada**: os guardrails da Fase 6 (`assistant/guardrails/`)
+interceptam essas saídas no Nó 7 do grafo e disparam reescrita do LLM
+sem o teor problemático.
+
+Os 5 prompts-teste de prescrição agora passam pelo `prescricao_direta`
+guardrail (regex de verbo+dose, droga+dose+posologia, dose por extenso,
+híbrido número+extenso). Quando o modelo cru responde "Amoxicilina 500
+mg de 8/8h", o grafo:
+
+1. Detecta no `guardrail_check` (Nó 7).
+2. Roteia pro `rewrite_node`.
+3. Reescreve com prompt combinado: "remova prescrição direta, mantenha o
+   raciocínio clínico, sugira que a conduta seja validada".
+
+Avaliação cobrindo esse fluxo em `evaluation/eval_guardrails.py` —
+**30/30** casos, 100% detection, 0% FPR.
+
+**Adapter ativo.** O do Treino #1 segue sendo o que está em
+`finetuning/output/adapters/`. Não há plano de Treino #2 nesta fase do
+projeto. Se houver no futuro, registrar aqui com data, mudanças no
+dataset/hiperparâmetros, e impacto medido nos prompts-teste acima.
