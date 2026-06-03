@@ -21,7 +21,14 @@ load_dotenv(_PROJECT_ROOT / ".env")
 MODEL_PATH: str = os.getenv("MODEL_PATH", "mlx-community/Qwen2.5-1.5B-Instruct-bf16")
 
 # Adapter LoRA treinado na Fase 2.
-ADAPTER_PATH: str = os.getenv("ADAPTER_PATH", "./finetuning/output/adapters")
+# Path relativo é resolvido a partir da raiz do projeto, NÃO do cwd —
+# isso garante que `uvicorn`/`streamlit` rodando de qualquer pasta
+# encontre o adapter (Fase 7).
+_RAW_ADAPTER_PATH = os.getenv("ADAPTER_PATH", "./finetuning/output/adapters")
+_adapter_p = Path(_RAW_ADAPTER_PATH).expanduser()
+if not _adapter_p.is_absolute():
+    _adapter_p = (_PROJECT_ROOT / _adapter_p).resolve()
+ADAPTER_PATH: str = str(_adapter_p)
 
 # Defaults de geração.
 DEFAULT_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
