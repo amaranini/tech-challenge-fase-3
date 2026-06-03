@@ -41,10 +41,17 @@ class InteractionRow:
     response: str | None
     latency_ms: int | None
     rag_has_sources: bool
+    doctor_id: str | None         # v2 (Fase 7)
     state_snapshot: str | None    # JSON; chamador pode parsear se quiser
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> "InteractionRow":
+        # `doctor_id` pode estar ausente em DBs criados antes da v2 ou em
+        # SELECTs que não trouxeram a coluna — defensivo.
+        try:
+            doctor_id = row["doctor_id"]
+        except (IndexError, KeyError):
+            doctor_id = None
         return cls(
             id=row["id"],
             request_id=row["request_id"],
@@ -57,6 +64,7 @@ class InteractionRow:
             response=row["response"],
             latency_ms=row["latency_ms"],
             rag_has_sources=bool(row["rag_has_sources"]),
+            doctor_id=doctor_id,
             state_snapshot=row["state_snapshot"],
         )
 

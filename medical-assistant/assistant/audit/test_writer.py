@@ -6,7 +6,7 @@ import sqlite3
 
 import pytest
 
-from assistant.audit.schema import get_schema_version, init_db
+from assistant.audit.schema import SCHEMA_VERSION, get_schema_version, init_db
 from assistant.audit.writer import AuditWriter
 from assistant.graph_state import initial_state
 
@@ -32,12 +32,12 @@ class TestSchemaInit:
     def test_init_db_cria_arquivo(self, db_path):
         init_db(db_path)
         assert db_path.exists()
-        assert get_schema_version(db_path) == 1
+        assert get_schema_version(db_path) == SCHEMA_VERSION
 
     def test_init_db_idempotente(self, db_path):
         init_db(db_path)
         init_db(db_path)  # 2ª vez não deve falhar
-        assert get_schema_version(db_path) == 1
+        assert get_schema_version(db_path) == SCHEMA_VERSION
 
     def test_get_version_em_db_inexistente(self, tmp_path):
         assert get_schema_version(tmp_path / "nao_existe.db") is None

@@ -81,25 +81,34 @@ class AuditWriter:
         self,
         state: MedicalState,
         latency_ms: int,
+        doctor_id: str | None = None,
     ) -> bool:
         """Grava uma execução completa do grafo no DB.
 
         Retorna True se gravou com sucesso, False em caso de erro (loga
         a exceção mas não propaga). NÃO levanta — defensivo por design.
+
+        `doctor_id`: identificador do médico que disparou a consulta (vem do
+        header `X-Doctor-Id` na API). None quando a consulta foi via CLI.
         """
         self._ensure_db()
         if not self._initialized:
             return False
 
         try:
-            self._write_atomic(state, latency_ms)
+            self._write_atomic(state, latency_ms, doctor_id)
             return True
         except Exception as e:  # noqa: BLE001
             logger.exception("Audit write falhou pra request_id=%s: %s",
                              state.get("request_id"), e)
             return False
 
-    def _write_atomic(self, state: MedicalState, latency_ms: int) -> None:
+    def _write_atomic(
+        self,
+        state: MedicalState,
+        latency_ms: int,
+        doctor_id: str | None = None,
+    ) -> None:
         """Escrita transacional. Pode levantar; só é chamado de write_interaction
         que captura.
         """
@@ -125,8 +134,8 @@ class AuditWriter:
                     "INSERT INTO interactions "
                     "(request_id, ts, question, patient_id, intent, urgency, "
                     " bypass_detected, response, latency_ms, rag_has_sources, "
-                    " state_snapshot) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    " doctor_id, state_snapshot) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         request_id, ts,
                         state.get("question", ""),
@@ -137,6 +146,7 @@ class AuditWriter:
                         state.get("final_response"),
                         latency_ms,
                         1 if state.get("rag_has_sources") else 0,
+                        doctor_id,
                         snapshot_json,
                     ),
                 )

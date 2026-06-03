@@ -26,7 +26,7 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 AUDIT_DB_PATH = _PROJECT_ROOT / "logging_" / "audit.db"
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # v2 (Fase 7): coluna `doctor_id` em interactions
 
 # CREATE TABLEs — usar IF NOT EXISTS pra ser idempotente.
 # Coluna `ts` em formato ISO 8601 (string) — SQLite não tem tipo DATETIME nativo,
@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS interactions (
     response TEXT,
     latency_ms INTEGER,
     rag_has_sources INTEGER,
+    doctor_id TEXT,             -- v2 (Fase 7): quem consultou (header X-Doctor-Id)
     state_snapshot TEXT  -- JSON do state completo (truncado se necessário)
 );
 
@@ -105,9 +106,22 @@ CREATE INDEX IF NOT EXISTS idx_rag_request ON rag_retrievals(request_id);
 """
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Aplica migrações leves pra DBs já existentes em versões antigas.
+
+    SQLite suporta `ALTER TABLE ... ADD COLUMN` sem dor, então usamos isso
+    pra colunas novas em versões maiores. Idempotente: checa a coluna antes
+    de tentar adicionar.
+    """
+    # v1 → v2 (Fase 7): coluna `doctor_id` em interactions
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(interactions)").fetchall()}
+    if "doctor_id" not in cols:
+        conn.execute("ALTER TABLE interactions ADD COLUMN doctor_id TEXT")
+
+
 def init_db(db_path: Path | str = AUDIT_DB_PATH) -> Path:
     """Inicializa o DB: cria tabelas se não existem, seta WAL mode,
-    insere/atualiza versão do schema. Idempotente.
+    aplica migrações pendentes, insere/atualiza versão do schema. Idempotente.
     """
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -118,6 +132,7 @@ def init_db(db_path: Path | str = AUDIT_DB_PATH) -> Path:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.executescript(_DDL)
+        _migrate(conn)
         conn.execute(
             "INSERT OR REPLACE INTO schema_meta(key, value) VALUES (?, ?)",
             ("version", str(SCHEMA_VERSION)),
