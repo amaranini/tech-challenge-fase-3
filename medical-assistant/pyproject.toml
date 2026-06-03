@@ -67,6 +67,8 @@ dev = [
     "ipykernel>=6.29,<7.0",
     "matplotlib>=3.8,<4.0",
     "pyyaml>=6.0,<7.0",
+    # httpx: cliente HTTP usado pelos testes da API (Fase 7) e pelo wrapper da UI.
+    "httpx>=0.28,<1.0",
 ]
 
 [build-system]
@@ -88,8 +90,9 @@ select = ["E", "F", "I", "B", "UP"]
 # diretório (ex: `from anonymization import ...`) sem precisar instalar
 # o projeto como pacote. `.` adicionado pra resolver `from assistant.*`.
 pythonpath = ["data", "."]
-testpaths = ["data", "assistant"]
+testpaths = ["data", "assistant", "api"]
 python_files = ["test_*.py"]
 markers = [
     "slow: testes que carregam o modelo MLX (~10s+) — pulam por default. Use -m slow.",
 ]
+

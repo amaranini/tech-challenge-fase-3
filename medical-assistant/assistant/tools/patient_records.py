@@ -95,6 +95,35 @@ def get_patient_by_id(patient_id: str, db_path: Path | str = DB_PATH) -> Patient
     return rec
 
 
+def list_patients(
+    db_path: Path | str = DB_PATH,
+    limit: int = 100,
+) -> list[dict]:
+    """Lista resumida de pacientes (id, nome, idade, sexo).
+
+    Usada pelo endpoint `/patients` da API (Fase 7) pra popular o dropdown
+    da UI. Não traz dados sensíveis — só o suficiente pra identificação.
+
+    Retorna [] se o banco não existir (ao invés de levantar) — útil pra
+    health checks da API.
+    """
+    db_path = Path(db_path)
+    if not db_path.exists():
+        logger.warning("list_patients: banco não encontrado em %s", db_path)
+        return []
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            "SELECT id, nome, idade, sexo FROM pacientes "
+            "ORDER BY id ASC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
+
+
 def get_pending_exams(patient_id: str, db_path: Path | str = DB_PATH) -> list[dict]:
     """Lista exames pendentes do paciente na tabela `exames_pendentes` (Fase 5).
 

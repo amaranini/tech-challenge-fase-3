@@ -2242,6 +2242,7 @@ data = [
     { name = "tiktoken" },
 ]
 dev = [
+    { name = "httpx" },
     { name = "ipykernel" },
     { name = "matplotlib" },
     { name = "pytest" },
@@ -2263,6 +2264,7 @@ requires-dist = [
     { name = "datasets", marker = "extra == 'data'", specifier = ">=2.20,<3.0" },
     { name = "faker", marker = "extra == 'data'", specifier = ">=26.0,<28.0" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115,<1.0" },
+    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28,<1.0" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29,<7.0" },
     { name = "langchain", specifier = ">=0.3,<0.4" },
     { name = "langchain-community", specifier = ">=0.3,<0.4" },
