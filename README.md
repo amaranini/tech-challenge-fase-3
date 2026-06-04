@@ -48,7 +48,7 @@ e **por quê** cada escolha foi feita. Referenciado ao longo do relatório.
 
 ### 3. Vídeo de demonstração
 
-🎥 *Link do vídeo será adicionado aqui após a gravação do screencast (15 min).*
+🎥 [Vídeo de demonstração](https://youtu.be/6y6pmWYsFPw)
 
 ---
 

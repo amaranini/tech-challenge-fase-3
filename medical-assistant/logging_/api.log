@@ -1,146 +1,36 @@
 /Users/taqtile/Projetos/POSTECH/tech-challenge-fase-3/medical-assistant/.venv/lib/python3.11/site-packages/langgraph/checkpoint/base/__init__.py:18: LangChainPendingDeprecationWarning: The default value of `allowed_objects` will change in a future version. Pass an explicit value (e.g., allowed_objects='messages' or allowed_objects='core') to suppress this warning.
   from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
-INFO:     Started server process [23746]
+INFO:     Started server process [44867]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:53748 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53750 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53780 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53780 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53780 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53791 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53791 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53791 - "GET /health HTTP/1.1" 200 OK
-Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 130168.06it/s]
+INFO:     127.0.0.1:49535 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49537 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49565 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49565 - "GET /patients?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49565 - "GET /audit?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49575 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49575 - "GET /audit?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49575 - "GET /health HTTP/1.1" 200 OK
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 180615.96it/s]
 mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
-Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 187804.66it/s]
+Fetching 9 files:   0%|          | 0/9 [00:00<?, ?it/s]Fetching 9 files: 100%|██████████| 9/9 [00:00<00:00, 91846.07it/s]
 [emit_alert_if_needed] ALERTA emitido pid=None
 ⚠️  ALERTA EMITIDO: urgência alta para paciente <sem ID> (notificação simulada — alerts.jsonl)
-INFO:     127.0.0.1:53791 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53791 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54079 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54079 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54079 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54079 - "GET /health HTTP/1.1" 200 OK
-[emit_alert_if_needed] ALERTA emitido pid=None
-⚠️  ALERTA EMITIDO: urgência alta para paciente <sem ID> (notificação simulada — alerts.jsonl)
-INFO:     127.0.0.1:54079 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54079 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54090 - "GET /health HTTP/1.1" 200 OK
-[emit_alert_if_needed] ALERTA emitido pid=None
-⚠️  ALERTA EMITIDO: urgência alta para paciente <sem ID> (notificação simulada — alerts.jsonl)
-INFO:     127.0.0.1:54090 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54090 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54121 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54121 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54121 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54121 - "GET /health HTTP/1.1" 200 OK
-[emit_alert_if_needed] ALERTA emitido pid=None
-⚠️  ALERTA EMITIDO: urgência alta para paciente <sem ID> (notificação simulada — alerts.jsonl)
-INFO:     127.0.0.1:54121 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54121 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54162 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54162 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54162 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54162 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54162 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54162 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54187 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54187 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54187 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54187 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54187 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54187 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54205 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54205 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54205 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54205 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54205 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54205 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54217 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54217 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54217 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54217 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54217 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54230 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54230 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54230 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54230 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54230 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54230 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54239 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54239 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54239 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54239 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54239 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54276 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54276 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54276 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54276 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54276 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54276 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54421 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54421 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54427 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54427 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54427 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54431 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54431 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54431 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54431 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54431 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54451 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54451 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54451 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54451 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54451 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54451 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54458 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54458 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54458 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54458 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54458 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54479 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54479 - "GET /audit?limit=20&has_guardrail=true HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54489 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54489 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54489 - "GET /audit?limit=20&has_guardrail=true HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54489 - "GET /health HTTP/1.1" 200 OK
-[guardrail_check] 1 block(s) triggered: prescricao_direta
-INFO:     127.0.0.1:54489 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54489 - "GET /audit?limit=20&has_guardrail=true HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54494 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54494 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /health HTTP/1.1" 200 OK
-[guardrail_check] 1 block(s) triggered: prescricao_direta
-INFO:     127.0.0.1:54498 - "POST /consult HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54498 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /patients?limit=100 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /audit?limit=20&has_guardrail=true HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /audit?limit=20&has_alerts=true HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /audit?limit=20 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54525 - "GET /audit?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49575 - "POST /consult HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49575 - "GET /audit?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /patients?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /audit?limit=20&has_alerts=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /audit?limit=20&has_guardrail=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49600 - "GET /audit?limit=20&has_guardrail=true HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49603 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49603 - "GET /audit?limit=20&has_guardrail=true HTTP/1.1" 200 OK
 INFO:     Shutting down
 INFO:     Waiting for application shutdown.
 INFO:     Application shutdown complete.
-INFO:     Finished server process [23746]
-error: Failed to get PID of child process
-  Caused by: ESRCH: No such process
+INFO:     Finished server process [44867]
 /Users/taqtile/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
   warnings.warn('resource_tracker: There appear to be %d '
