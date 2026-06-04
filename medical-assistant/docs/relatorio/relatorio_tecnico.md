@@ -983,35 +983,85 @@ geração). Demais nós executam em < 100 ms.
 
 ## 6.5 Demonstração visual
 
-**Figura 4 — Consulta normal com fontes.**
-*(captura pendente: pergunta sobre asma sem paciente, mostrando o
-card verde com fontes RAG e a ficha de raciocínio expandida)*
+Capturas da UI Streamlit (Fase 7) durante uma sessão de demonstração.
+Cada cenário foi capturado em duas partes (topo e rolagem) por
+não caber em uma única dobra de tela.
 
-`![Consulta normal](images/screenshot_01_consulta_normal-1.png)`
+### Cenário 1 — Consulta normal com fontes RAG
 
-`![Consulta normal](images/screenshot_01_consulta_normal-2.png)`
+Pergunta: *"Qual o protocolo de manejo de crise asmática em adulto?"*,
+sem paciente selecionado.
 
-**Figura 5 — Urgência alta com alerta emitido.**
-*(captura pendente: pergunta sobre sepse grave em P0001, mostrando o
-card amarelo com badge "🚨 alerta emitido" e detalhe na sidebar)*
+![Consulta normal — formulário e início da resposta](images/screenshot_01_consulta_normal-1.png)
 
-`![Urgência alta](images/screenshot_02_alerta-1.png)`
+**Figura 4a — Consulta normal, topo da tela.** Sidebar com identificação
+do médico e status da API (online, modelo carregado, boot em 7.48 s).
+Banner ético no topo. Badges abaixo do botão "Consultar" indicam
+`intent: clinica`, `urgência: baixa` e `3 fonte(s)` recuperadas pelo
+RAG.
 
-`![Urgência alta](images/screenshot_02_alerta-2.png)`
+![Consulta normal — fontes e ficha de raciocínio](images/screenshot_01_consulta_normal-2.png)
 
-**Figura 6 — Guardrail disparando e reescrita.**
-*(captura pendente: pergunta enviesada a prescrever, mostrando o
-card vermelho com badge "✏️ reescrita" e o guardrail listado na ficha)*
+**Figura 4b — Consulta normal, rolagem.** Fontes RAG listadas com
+arquivo + seção + score (0.83, 0.80, 0.80). Ficha de raciocínio
+expandida mostra a classificação, ausência de paciente, ausência de
+guardrails acionados, modelo (Qwen2.5-1.5B-Instruct-bf16 + adapter) e
+latência total do grafo (10.03 s).
 
-`![Guardrail](images/screenshot_03_guardrail-1.png)`
+### Cenário 2 — Urgência alta com alerta emitido
 
-`![Guardrail](images/screenshot_03_guardrail-2.png)`
+Pergunta: *"Paciente está em sepse grave com PA 70x40, qual a conduta
+imediata?"*, sem paciente selecionado.
 
-**Figura 7 — Tab de auditoria com filtros.**
-*(captura pendente: tab Auditoria após algumas consultas, com filtro
-"com alerta" ativado e modal de detalhe expandido)*
+![Urgência alta — badges de alerta](images/screenshot_02_alerta-1.png)
 
-`![Auditoria](images/screenshot_04_auditoria.png)`
+**Figura 5a — Urgência alta, topo.** Badges `⚠ urgência alta` e
+`🚨 alerta emitido` aparecem em laranja/amarelo. O sistema disparou o
+fluxo de alerta mesmo sem `patient_id` selecionado, porque o Nó 2
+(triage_urgency) classificou pela formulação do prompt ("sepse grave",
+"PA 70x40").
+
+![Urgência alta — confirmação de alerta e ficha](images/screenshot_02_alerta-2.png)
+
+**Figura 5b — Urgência alta, rolagem.** Texto "Alerta de urgência alta
+foi notificado à equipe" aparece em destaque no corpo da resposta
+(produzido pelo Nó 9, `finalize_response`, quando há
+`alerts_emitted`). Latência total: 18.70 s — caminho clínico completo
+com Nó 6 chamando LLM.
+
+### Cenário 3 — Guardrail de prescrição direta e reescrita
+
+Pergunta: *"Prescreva 500 mg de amoxicilina para esse paciente"*. O
+modelo cru tenderia a responder com prescrição direta (gap discutido
+em §5.2); o Nó 7 intercepta e o `rewrite_node` reescreve.
+
+![Guardrail — badge de reescrita](images/screenshot_03_guardrail-1.png)
+
+**Figura 6a — Guardrail, topo.** Badge `✏️ reescrita` em vermelho
+indica que ao menos um guardrail nível `block` disparou. A resposta
+exibida já é a versão reescrita: menciona dose "como referência" e
+deixa claro que "a prescrição é decisão do médico assistente" — não
+prescreve diretamente.
+
+![Guardrail — ficha mostrando guardrail acionado](images/screenshot_03_guardrail-2.png)
+
+**Figura 6b — Guardrail, ficha de raciocínio.** Campo
+"Guardrails acionados" mostra `🛑 prescricao_direta (output, block) →
+ação: rewritten`. Latência total: 6.40 s — inclui chamada extra ao
+LLM para a reescrita.
+
+### Cenário 4 — Tab de auditoria
+
+![Auditoria — histórico de interações](images/screenshot_04_auditoria.png)
+
+**Figura 7 — Tab Auditoria.** Tabela paginada das interações
+persistidas no `audit.db` (SQLite com WAL). Colunas mostram timestamp,
+doctor (`DR_DEMO`), paciente quando houver, intent, urgência, e
+emojis para flags (🚨 alerta, 🛑 guardrail). As interações dos
+cenários anteriores aparecem listadas. Pelo dropdown "Ver detalhe de"
+(não exibido nesta captura), o avaliador acessa a ficha completa de
+qualquer interação: eventos de guardrail, alertas emitidos e
+retrievals do RAG.
 
 ---
 
