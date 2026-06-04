@@ -983,29 +983,29 @@ geração). Demais nós executam em < 100 ms.
 
 ## 6.5 Demonstração visual
 
-> **Placeholder para 4 screenshots da UI Streamlit.** Estes serão
-> capturados manualmente após este relatório receber primeira
-> revisão. Roteiro de captura está no documento de trabalho — cada
-> screenshot exige uma sessão da UI rodando e uma pergunta
-> específica.
-
 **Figura 4 — Consulta normal com fontes.**
 *(captura pendente: pergunta sobre asma sem paciente, mostrando o
 card verde com fontes RAG e a ficha de raciocínio expandida)*
 
-`![Consulta normal](images/screenshot_01_consulta_normal.png)`
+`![Consulta normal](images/screenshot_01_consulta_normal-1.png)`
+
+`![Consulta normal](images/screenshot_01_consulta_normal-2.png)`
 
 **Figura 5 — Urgência alta com alerta emitido.**
 *(captura pendente: pergunta sobre sepse grave em P0001, mostrando o
 card amarelo com badge "🚨 alerta emitido" e detalhe na sidebar)*
 
-`![Urgência alta](images/screenshot_02_alerta.png)`
+`![Urgência alta](images/screenshot_02_alerta-1.png)`
+
+`![Urgência alta](images/screenshot_02_alerta-2.png)`
 
 **Figura 6 — Guardrail disparando e reescrita.**
 *(captura pendente: pergunta enviesada a prescrever, mostrando o
 card vermelho com badge "✏️ reescrita" e o guardrail listado na ficha)*
 
-`![Guardrail](images/screenshot_03_guardrail.png)`
+`![Guardrail](images/screenshot_03_guardrail-1.png)`
+
+`![Guardrail](images/screenshot_03_guardrail-2.png)`
 
 **Figura 7 — Tab de auditoria com filtros.**
 *(captura pendente: tab Auditoria após algumas consultas, com filtro
